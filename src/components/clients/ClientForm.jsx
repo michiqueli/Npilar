@@ -19,7 +19,7 @@ const ClientForm = ({
     <AnimatePresence>
       {isOpen && (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="max-w-lg mx-auto p-0">
+          <DialogContent className="max-w-lg mx-auto p-0 top-12 left-[40vw]">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

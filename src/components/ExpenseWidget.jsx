@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Camera, Upload, Receipt, Zap } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import CameraCapture from '@/components/CameraCapture';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Camera, Upload, Receipt, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import CameraCapture from "@/components/CameraCapture";
 
 const ExpenseWidget = () => {
   const { toast } = useToast();
@@ -12,7 +12,7 @@ const ExpenseWidget = () => {
   const [lastExpenses, setLastExpenses] = useState([]);
 
   useEffect(() => {
-    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    const expenses = JSON.parse(localStorage.getItem("expenses") || "[]");
     setLastExpenses(expenses.slice(-2).reverse()); // Mostrar las últimas 2 facturas
   }, [isProcessing]); // Actualizar cuando se procesa una nueva factura
 
@@ -22,29 +22,30 @@ const ExpenseWidget = () => {
 
   const handleImageCapture = (imageUrl) => {
     setIsProcessing(true);
-    
+
     // Simular procesamiento de IA
     setTimeout(() => {
       setIsProcessing(false);
-      
+
       // Guardar la imagen
-      const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+      const expenses = JSON.parse(localStorage.getItem("expenses") || "[]");
       const newExpense = {
         id: Date.now(),
-        type: 'factura',
+        type: "factura",
         imageUrl: imageUrl,
         date: new Date().toISOString(),
-        status: 'procesada',
+        status: "procesada",
         amount: null,
-        description: 'Factura capturada con cámara'
+        description: "Factura capturada con cámara",
       };
-      
+
       expenses.push(newExpense);
-      localStorage.setItem('expenses', JSON.stringify(expenses));
-      
+      localStorage.setItem("expenses", JSON.stringify(expenses));
+
       toast({
         title: "✅ Factura Guardada",
-        description: "La factura ha sido guardada y está lista para análisis con IA.",
+        description:
+          "La factura ha sido guardada y está lista para análisis con IA.",
       });
     }, 1500);
   };
@@ -53,30 +54,31 @@ const ExpenseWidget = () => {
     const file = e.target.files[0];
     if (file) {
       setIsProcessing(true);
-      
+
       const imageUrl = URL.createObjectURL(file);
-      
+
       setTimeout(() => {
         setIsProcessing(false);
-        
+
         // Guardar archivo subido
-        const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+        const expenses = JSON.parse(localStorage.getItem("expenses") || "[]");
         const newExpense = {
           id: Date.now(),
-          type: 'factura',
+          type: "factura",
           imageUrl: imageUrl,
           date: new Date().toISOString(),
-          status: 'procesada',
+          status: "procesada",
           amount: null,
-          description: 'Factura subida desde galería'
+          description: "Factura subida desde galería",
         };
-        
+
         expenses.push(newExpense);
-        localStorage.setItem('expenses', JSON.stringify(expenses));
-        
+        localStorage.setItem("expenses", JSON.stringify(expenses));
+
         toast({
           title: "📄 Archivo Guardado",
-          description: "El archivo ha sido guardado y está listo para análisis con IA.",
+          description:
+            "El archivo ha sido guardado y está listo para análisis con IA.",
         });
       }, 1500);
     }
@@ -115,14 +117,12 @@ const ExpenseWidget = () => {
                 <Camera className="w-8 h-8" />
               )}
             </motion.div>
-            
+
             <div className="text-left">
               <h3 className="text-xl font-bold text-foreground mb-1 tracking-tight">
                 Cargar Gastos del Día
               </h3>
-              <p className="text-primary font-medium">
-                (sacá foto del ticket)
-              </p>
+              <p className="text-primary font-medium">(sacá foto del ticket)</p>
             </div>
           </div>
 
@@ -190,21 +190,23 @@ const ExpenseWidget = () => {
 
           {lastExpenses.length > 0 && !isProcessing && (
             <div className="mt-6 pt-4 border-t">
-              <h4 className="text-sm font-semibold text-muted-foreground mb-3">Últimas cargas</h4>
+              <h4 className="text-sm font-semibold text-muted-foreground mb-3">
+                Últimas cargas
+              </h4>
               <div className="flex justify-center gap-4">
-                {lastExpenses.map(exp => (
-                  <motion.div 
+                {lastExpenses.map((exp) => (
+                  <motion.div
                     key={exp.id}
                     className="w-20 h-20 rounded-lg overflow-hidden border-2 border-primary/20 shadow-sm"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <img 
+                    <img
                       src={exp.imageUrl}
                       alt={exp.description}
                       className="w-full h-full object-cover"
-                     src="https://images.unsplash.com/photo-1616959394171-ceb678bda835" />
+                    />
                   </motion.div>
                 ))}
               </div>

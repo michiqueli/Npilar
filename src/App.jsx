@@ -1,22 +1,31 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
-import { Toaster } from '@/components/ui/toaster';
+import { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Helmet } from "react-helmet";
+import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Layout from '@/components/Layout';
-import Dashboard from '@/pages/Dashboard';
-import Calendario from '@/pages/Calendario';
-import Clientes from '@/pages/Clientes';
-import ClientProfile from '@/pages/ClientProfile';
-import Analitica from '@/pages/Analitica';
-import Productos from '@/pages/Productos';
+import Layout from "@/components/Layout";
+import Dashboard from "@/pages/Dashboard";
+import Calendario from "@/pages/Calendario";
+import Clientes from "@/pages/Clientes";
+import ClientProfile from "@/pages/ClientProfile";
+import Analitica from "@/pages/Analitica";
+import Productos from "@/pages/Productos";
+import { signInAdmin } from "@/hooks/useSupabaseLogin";
 
 function App() {
+  
+  useEffect(() => {
+    signInAdmin();
+  }, []);
+
   return (
     <>
       <Helmet>
         <title>N - Pilar | El asistente del barbero</title>
-        <meta name="description" content="Sistema de gestión profesional para barberías y negocios. Gestiona citas, clientes, analítica y contabilidad." />
+        <meta
+          name="description"
+          content="Sistema de gestión profesional para barberías y negocios. Gestiona citas, clientes, analítica y contabilidad."
+        />
       </Helmet>
       <Router>
         <TooltipProvider>

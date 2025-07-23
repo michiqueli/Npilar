@@ -1,19 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, UserPlus, Calendar as CalendarIcon, AlertTriangle, Clock } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, addMinutes, parse } from 'date-fns';
+import { format, addMinutes, parse, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
-import TimePicker from '@/components/calendar/TimePicker';
+import TimePicker from '@/components/calendar/TimePicker'; // Usaremos el nuevo TimePicker
 
 const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, services, appointments }) => {
     const { toast } = useToast();
@@ -27,6 +27,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
     const [selectedTime, setSelectedTime] = useState('09:00');
     const [endTime, setEndTime] = useState('');
     const [overlapWarning, setOverlapWarning] = useState(false);
+    const [notes, setNotes] = useState('');
     
     const [filteredClients, setFilteredClients] = useState([]);
     const [isClientListVisible, setIsClientListVisible] = useState(false);
@@ -41,13 +42,24 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
         setEndTime('');
         setOverlapWarning(false);
         setIsClientListVisible(false);
+        setNotes('');
     };
 
     useEffect(() => {
         if (isOpen) {
+            const preselectedClient = modalData?.preselectedClient;
+            
+            if (preselectedClient) {
+                setTab('existing');
+                setSelectedClientId(preselectedClient.id);
+                setClientSearch(preselectedClient.name);
+                setIsClientListVisible(false);
+            }
+
             if (modalData && modalData.date && modalData.hourIndex !== undefined) {
                 setSelectedDate(modalData.date);
-                const initialTime = addMinutes(new Date(modalData.date).setHours(8, 0, 0, 0), modalData.hourIndex * 30);
+                // MODIFICADO: Cálculo de tiempo para intervalos de 15
+                const initialTime = addMinutes(new Date(modalData.date).setHours(8, 0, 0, 0), modalData.hourIndex * 15);
                 setSelectedTime(format(initialTime, 'HH:mm'));
             } else {
                 setSelectedDate(new Date());
@@ -59,7 +71,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
     }, [modalData, isOpen]);
     
     useEffect(() => {
-        if (clientSearch) {
+        if (clientSearch && !selectedClientId) {
             const results = clients.filter(c => 
                 c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
                 (c.phone && c.phone.includes(clientSearch))
@@ -69,29 +81,23 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
         } else {
             setIsClientListVisible(false);
         }
-    }, [clientSearch, clients]);
+    }, [clientSearch, clients, selectedClientId]);
     
     useEffect(() => {
         if (selectedServiceId && selectedTime && selectedDate && services.length > 0) {
-            const service = services.find(s => s.id === parseInt(selectedServiceId));
+            const service = services.find(s => s.id.toString() === selectedServiceId);
             if (service) {
                 try {
                     const startTime = parse(selectedTime, 'HH:mm', selectedDate);
-                    const newEndTime = addMinutes(startTime, service.duration);
+                    const newEndTime = addMinutes(startTime, service.duration_min);
                     setEndTime(format(newEndTime, 'HH:mm'));
                     
                     const appointmentStart = startTime.getTime();
                     const appointmentEnd = newEndTime.getTime();
                     
                     const isOverlap = appointments.some(appt => {
-                        const existingService = services.find(s => s.id === appt.serviceId);
-                        if (!existingService) return false;
-                        
-                        const existingDate = parse(appt.date, 'yyyy-MM-dd', new Date());
-                        const existingStartTime = addMinutes(new Date(existingDate).setHours(8, 0, 0, 0), appt.hourIndex * 30);
-                        const existingStart = existingStartTime.getTime();
-                        const existingEnd = addMinutes(existingStartTime, existingService.duration).getTime();
-                        
+                        const existingStart = parseISO(appt.appointment_at).getTime();
+                        const existingEnd = addMinutes(existingStart, appt.duration_at_time_minutes).getTime();
                         return (appointmentStart < existingEnd && appointmentEnd > existingStart);
                     });
 
@@ -114,30 +120,41 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
 
     const handleSave = () => {
         let clientDetails;
+
         if (tab === 'new') {
             if (!newClientName.trim()) {
-                 toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, completa el nombre del nuevo cliente.' });
-                 return;
+                toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, completa el nombre del nuevo cliente.' });
+                return;
             }
-            const newClient = { id: Date.now(), name: newClientName, phone: newClientPhone, historicSlots: [], lastVisit: format(new Date(), 'yyyy-MM-dd') };
-            clientDetails = { clientId: newClient.id, clientName: newClient.name };
+            clientDetails = { isNew: true, name: newClientName, phone: newClientPhone };
         } else {
             if (!selectedClientId) {
-                 toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, selecciona un cliente existente.' });
-                 return;
+                toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, selecciona un cliente existente.' });
+                return;
             }
-            const client = clients.find(c => c.id === parseInt(selectedClientId));
-            clientDetails = { clientId: client.id, clientName: client.name };
+            const client = clients.find(c => c.id === selectedClientId);
+            
+            if (!client) {
+                toast({ variant: 'destructive', title: 'Error', description: 'El cliente seleccionado no es válido.' });
+                return;
+            }
+            clientDetails = { isNew: false, clientId: client.id, clientName: client.name };
         }
 
         if (!selectedServiceId) {
             toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, selecciona un servicio.'});
             return;
         }
-        const service = services.find(s => s.id === parseInt(selectedServiceId));
+        
+        const service = services.find(s => s.id.toString() === selectedServiceId);
+        if (!service) {
+            toast({ variant: 'destructive', title: 'Error', description: 'El servicio seleccionado no es válido.' });
+            return;
+        }
 
+        // MODIFICADO: Cálculo de hourIndex para intervalos de 15 minutos
         const [hour, minute] = selectedTime.split(':');
-        const hourIndex = (parseInt(hour) - 8) * 2 + Math.floor(parseInt(minute) / 30);
+        const hourIndex = (parseInt(hour) - 8) * 4 + Math.floor(parseInt(minute) / 15);
 
         onSave({
             date: selectedDate,
@@ -145,7 +162,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
             details: {
                 ...clientDetails,
                 serviceId: service.id,
-                serviceName: service.name
+                notes: notes,
             }
         });
         handleClose();
@@ -155,11 +172,11 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
         onClose();
     };
 
-    const isPrefilled = !!modalData;
+    const isPrefilled = !!modalData?.date && modalData?.hourIndex !== undefined && !modalData?.preselectedClient;
 
     return (
-        <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-md max-w-90vw] rounded-xl bg-bg-light-gray fixed top-12 left-[40vw]">
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md max-w-[90vw] rounded-xl fixed top-12 left-[40vw]">
                 <DialogHeader>
                     <DialogTitle>Nueva Cita</DialogTitle>
                     <DialogDescription>
@@ -177,15 +194,15 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                                 </div>
                            ) : (
                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="secondary" className={cn("w-full justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}>
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {selectedDate ? format(selectedDate, 'PPP', { locale: es }) : <span>Elige una fecha</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus aria-label="Calendario" />
-                                    </PopoverContent>
+                                   <PopoverTrigger asChild>
+                                       <Button variant="secondary" className={cn("w-full justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}>
+                                           <CalendarIcon className="mr-2 h-4 w-4" />
+                                           {selectedDate ? format(selectedDate, 'PPP', { locale: es }) : <span>Elige una fecha</span>}
+                                       </Button>
+                                   </PopoverTrigger>
+                                   <PopoverContent className="w-auto p-0" align="start">
+                                       <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus aria-label="Calendario" />
+                                   </PopoverContent>
                                </Popover>
                            )}
                         </div>
@@ -203,12 +220,12 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                     </div>
                     {overlapWarning && (
                          <div role="alert" className="flex items-center p-2 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
-                            <AlertTriangle className="flex-shrink-0 inline w-4 h-4 mr-3" />
-                            <span className="sr-only">Warning</span>
-                            <div>
-                                <span className="font-medium">Alerta:</span> La cita se superpone con otra.
-                            </div>
-                        </div>
+                             <AlertTriangle className="flex-shrink-0 inline w-4 h-4 mr-3" />
+                             <span className="sr-only">Warning</span>
+                             <div>
+                                 <span className="font-medium">Alerta:</span> La cita se superpone con otra.
+                             </div>
+                         </div>
                     )}
 
                     <Tabs value={tab} onValueChange={setTab} className="pt-2">
@@ -219,17 +236,17 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                         <TabsContent value="existing" className="space-y-4 pt-4">
                             <div className="relative">
                                 <Label htmlFor="client-search">Buscar cliente</Label>
-                                <Input id="client-search" placeholder="Escribe para buscar..." value={clientSearch} onChange={e => setClientSearch(e.target.value)} onFocus={() => setIsClientListVisible(true)} onBlur={() => setTimeout(() => setIsClientListVisible(false), 150)} autoComplete="off" />
+                                <Input id="client-search" placeholder="Escribe para buscar..." value={clientSearch} onChange={e => { setClientSearch(e.target.value); setSelectedClientId(''); }} onFocus={() => setIsClientListVisible(true)} onBlur={() => setTimeout(() => setIsClientListVisible(false), 150)} autoComplete="off" />
                                 {isClientListVisible && (
                                     <div aria-live="polite" className="absolute z-20 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
                                         {filteredClients.length > 0 ? filteredClients.map(client => (
-                                            <div key={client.id} onMouseDown={() => { setSelectedClientId(client.id.toString()); setClientSearch(client.name); setIsClientListVisible(false); }}
-                                                className={cn("p-3 cursor-pointer hover:bg-accent flex justify-between items-center", selectedClientId === client.id.toString() ? "bg-primary/10" : "")}>
+                                            <div key={client.id} onMouseDown={() => { setSelectedClientId(client.id); setClientSearch(client.name); setIsClientListVisible(false); }}
+                                                 className={cn("p-3 cursor-pointer hover:bg-accent flex justify-between items-center", selectedClientId === client.id ? "bg-primary/10" : "")}>
                                                 <div>
                                                     <p className="font-semibold">{client.name}</p>
                                                     <p className="text-xs text-muted-foreground">{client.phone}</p>
                                                 </div>
-                                                {client.lastVisit && <p className="text-xs text-muted-foreground">Última visita: {format(new Date(client.lastVisit), 'dd/MM/yy')}</p>}
+                                                {client.last_visit_at && <p className="text-xs text-muted-foreground">Última visita: {format(new Date(client.last_visit_at), 'dd/MM/yy')}</p>}
                                             </div>
                                         )) : (
                                             <p className="text-sm text-muted-foreground text-center p-4">No se encontraron clientes.</p>
@@ -259,15 +276,20 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                             <SelectContent>
                                 {services.map(service => (
                                     <SelectItem key={service.id} value={service.id.toString()}>
-                                        {service.name} - ${service.price} ({service.duration} min)
+                                        {service.name} - ${service.sale_price} ({service.duration_min} min)
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                         {endTime && <p className="text-xs text-right text-muted-foreground">Finaliza aprox. a las {endTime}</p>}
                     </div>
+                    
+                    <div className="space-y-2">
+                        <Label htmlFor="notes">Notas (opcional)</Label>
+                        <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Alergias, preferencias, etc." />
+                    </div>
                 </div>
-                <DialogFooter className="bg-bg-light-gray pt-4">
+                <DialogFooter className="pt-4">
                     <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
                     <Button variant="primary" onClick={handleSave}>Guardar Cita</Button>
                 </DialogFooter>
