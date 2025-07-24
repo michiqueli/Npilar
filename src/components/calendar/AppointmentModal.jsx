@@ -176,7 +176,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md max-w-[90vw] rounded-xl fixed top-12 left-[40vw]">
+            <DialogContent className="sm:max-w-md max-w-[90vw] rounded-xl top-12 sm:left-[20%] left-[5%] fixed xl:top-12 xl:left-[35%]">
                 <DialogHeader>
                     <DialogTitle>Nueva Cita</DialogTitle>
                     <DialogDescription>

@@ -117,7 +117,7 @@ const AvailabilityModal = ({ isOpen, onClose, availability, onSave }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl top-12 left-[30vw]" style={{ maxWidth: '40rem' }}>
+      <DialogContent className="max-w-5xl xl:left-[30vw] top-12 sm:left-[15%%] left-[5%] fixed" style={{ maxWidth: '40rem' }}>
         <DialogHeader>
           <DialogTitle>Editar Horarios de Disponibilidad</DialogTitle>
           <DialogDescription>

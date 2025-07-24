@@ -116,7 +116,7 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-lg top-12 left-[40%]">
+            <DialogContent className="sm:max-w-lg top-12 sm:left-[20%] left-[5%] fixed xl:top-12 xl:left-[35%]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-3">
                         <DollarSign className="w-6 h-6 text-primary"/>

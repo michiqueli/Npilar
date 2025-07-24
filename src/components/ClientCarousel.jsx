@@ -41,7 +41,7 @@ const ClientCard = ({ title, appointment, onRegisterPayment, onWhatsApp, onViewP
                     <p className="font-medium">{format(parseISO(appointment_at), 'HH:mm')} - {service.name}</p>
                 </div>
             </div>
-            <div className="mt-6 flex flex-col sm:flex-row gap-2">
+            <div className="mt-6 flex flex-col xl:flex-row gap-2">
                 <Button onClick={() => onViewProfile(client.id)} variant="secondary" size="sm" className="flex-1">
                     <User className="w-4 h-4 mr-2" /> Ficha
                 </Button>

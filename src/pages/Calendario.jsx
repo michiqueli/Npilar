@@ -700,9 +700,12 @@ const Calendario = () => {
                   slidesPerView={5}
                   centeredSlides={true}
                   spaceBetween={10}
-                  onSlideChange={(swiper) =>
-                    setCurrentDate(weekDays[swiper.activeIndex])
-                  }
+                  onSlideChange={(swiper) => {
+                    const newDate = weekDays[swiper.activeIndex];
+                    if (newDate && !isSameDay(newDate, currentDate)) {
+                      setCurrentDate(newDate);
+                    }
+                  }}
                   className="w-full"
                   initialSlide={weekDays.findIndex((day) =>
                     isSameDay(day, currentDate)

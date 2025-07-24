@@ -29,7 +29,6 @@ const TodaySchedule = () => {
                 const [appointmentsRes, clientsRes, servicesRes, schedulesRes] = await Promise.all([
                     supabase
                         .from('appointments')
-                        // Pedimos el teléfono del cliente y la columna reminder_sent
                         .select('*, clients(id, name, phone), services(*)')
                         .gte('appointment_at', todayStart)
                         .lte('appointment_at', todayEnd)
