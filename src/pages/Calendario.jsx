@@ -853,7 +853,7 @@ const Calendario = () => {
                       return (
                         <div
                           key={appointment.id}
-                          className="bg-primary/20 p-2 rounded-lg flex flex-col justify-between overflow-hidden border-l-4 border-primary cursor-pointer hover:bg-primary/30 transition-colors group relative"
+                          className="bg-primary/20 p-2 rounded-lg flex flex-col justify-start overflow-hidden border-l-4 border-primary cursor-pointer transition-colors group relative"
                           style={{
                             gridColumn: `${dayIndex + 2} / span 1`,
                             gridRow: `${appointment.hourIndex + 2} / span ${
@@ -863,26 +863,30 @@ const Calendario = () => {
                             margin: "1px",
                           }}
                         >
-                          <div className="flex-grow">
-                            <p className="font-bold text-primary text-sm truncate">
+                          {/* Contenedor del texto que se oculta al hacer hover */}
+                          <div className="flex-grow transition-opacity duration-300 group-hover:opacity-0 text-center">
+                            <p className="font-bold text-primary text-md truncate">
                               {appointment.clients.name}
                             </p>
-                            <p className="text-primary/80 text-xs truncate">
+                            <p className="text-primary/80 text-md truncate">
                               {appointment.services.name}
                             </p>
                           </div>
 
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteAppointment(appointment);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {/* Botón de eliminar que aparece centrado al hacer hover */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 rounded-full bg-destructive/20 hover:bg-destructive/30"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Evita que se abra el modal de edición al hacer clic
+                                handleDeleteAppointment(appointment);
+                              }}
+                            >
+                              <Trash2 className="h-6 w-6 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}

@@ -31,8 +31,6 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-// PROP CAMBIADA: Recibimos `analyticsData` en lugar de `mockData`.
-// También necesitamos `selectedDays` para filtrar los datos del gráfico.
 const SummaryTab = ({ analyticsData, dateRange, selectedDays }) => {
     const { toast } = useToast();
 

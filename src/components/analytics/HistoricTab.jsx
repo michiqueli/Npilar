@@ -1,7 +1,6 @@
 import React from 'react';
 import { ResponsiveContainer, XAxis, YAxis, Tooltip, Bar, ComposedChart, Line } from 'recharts';
 
-// CORRECCIÓN: Cambiamos `mockData` por `analyticsData`.
 const HistoricTab = ({ analyticsData }) => {
     // Agregamos una comprobación para evitar errores si los datos aún no están listos.
     if (!analyticsData || !analyticsData.benchmarkData || !analyticsData.historicalData) {

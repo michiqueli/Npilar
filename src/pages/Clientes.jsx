@@ -17,17 +17,15 @@ import {
     DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import ClientListRow from '@/components/clients/ClientListRow';
-import { supabase } from '@/lib/supabaseClient'; // Asegúrate de que la ruta sea correcta
-
-// --- DATOS MOCKEADOS Y LOCALSTORAGE ELIMINADOS ---
+import { supabase } from '@/lib/supabaseClient'; 
 
 const Clientes = () => {
     const { toast } = useToast();
     const navigate = useNavigate();
     const [clients, setClients] = useState([]);
-    const [loading, setLoading] = useState(true); // Estado para la carga inicial
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortBy, setSortBy] = useState('last_visit_at'); // Coincide con el nombre de la columna
+    const [sortBy, setSortBy] = useState('last_visit_at');
     const [filterBy, setFilterBy] = useState('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState(null);
@@ -38,7 +36,7 @@ const Clientes = () => {
         phone: '',
         email: '',
         notes: '',
-        preferred_service_id: null // Usaremos el ID del servicio
+        preferred_service_id: null
     });
 
     useEffect(() => {
@@ -56,14 +54,13 @@ const Clientes = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, [viewMode]);
 
-    // --- NUEVO: useEffect para cargar clientes desde Supabase ---
     useEffect(() => {
         const fetchClients = async () => {
             setLoading(true);
             try {
                 const { data, error } = await supabase
                     .from('clients')
-                    .select('*'); // Puedes seleccionar columnas específicas si quieres
+                    .select('*'); 
 
                 if (error) throw error;
                 setClients(data || []);
@@ -86,7 +83,6 @@ const Clientes = () => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    // --- NUEVO: handleSubmit modificado para Supabase ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -101,7 +97,7 @@ const Clientes = () => {
 
         try {
             if (selectedClient) {
-                // --- ACTUALIZAR CLIENTE EXISTENTE ---
+                
                 const { data, error } = await supabase
                     .from('clients')
                     .update({
@@ -124,7 +120,7 @@ const Clientes = () => {
                 });
 
             } else {
-                // --- CREAR NUEVO CLIENTE ---
+                
                 const { data, error } = await supabase
                     .from('clients')
                     .insert({
@@ -179,7 +175,6 @@ const Clientes = () => {
         setIsModalOpen(true);
     };
 
-    // --- NUEVO: handleDelete modificado para Supabase ---
     const handleDelete = async (clientId) => {
         try {
             const { error } = await supabase
