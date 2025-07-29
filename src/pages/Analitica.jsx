@@ -2,7 +2,15 @@ import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet";
 import { useToast } from "@/components/ui/use-toast";
-import { startOfMonth, endOfMonth } from "date-fns";
+import {
+  startOfMonth,
+  endOfMonth,
+  parseISO,
+  format,
+  subMonths,
+  differenceInDays,
+  subDays
+} from "date-fns";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import {
@@ -24,7 +32,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { parseISO, format } from "date-fns";
 import SummaryTab from "@/components/analytics/SummaryTab";
 import ServicesTab from "@/components/analytics/ServicesTab";
 import HistoricTab from "@/components/analytics/HistoricTab";
@@ -51,6 +58,11 @@ const Analitica = () => {
   });
   const [selectedDays, setSelectedDays] = useState([0, 1, 2, 3, 4, 5, 6]);
 
+  // --- NUEVO: Estado para guardar las citas del mes anterior ---
+  const [prevMonthAppointments, setPrevMonthAppointments] = useState([]);
+  const [prevPeriodAppointments, setPrevPeriodAppointments] = useState([]);
+  const [prevPrevMonthAppointments, setPrevPrevMonthAppointments] = useState([]);
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
@@ -67,27 +79,57 @@ const Analitica = () => {
       setError(null);
 
       try {
-        // Hacemos la consulta a la tabla 'appointments'
-        const { data, error: fetchError } = await supabase
-          .from("appointments")
-          .select(
-            `
-            *,
-            services ( name, sale_price ),
-            clients ( name )
-          `
-          )
-          // Filtramos por el rango de fechas seleccionado
-          .gte("appointment_at", dateRange.from.toISOString())
-          .lte("appointment_at", dateRange.to.toISOString())
-          // Solo contamos las citas que generan ingresos
-          .in("status", ["COMPLETED", "PAID"]);
+        const daysInPeriod = differenceInDays(dateRange.to, dateRange.from) + 1;
+        const prevPeriodStart = subDays(dateRange.from, daysInPeriod);
+        const prevPeriodEnd = subDays(dateRange.to, daysInPeriod);
 
-        if (fetchError) {
-          throw fetchError;
-        }
+        const prevMonthStart = startOfMonth(subMonths(dateRange.from, 1));
+        const prevMonthEnd = endOfMonth(subMonths(dateRange.from, 1));
 
-        setAppointmentsData(data || []);
+        const prevPrevMonthStart = startOfMonth(subMonths(dateRange.from, 2));
+        const prevPrevMonthEnd = endOfMonth(subMonths(dateRange.from, 2));
+
+        const [
+          currentPeriodRes,
+          prevPeriodRes,
+          prevMonthRes,
+          prevPrevMonthRes,
+        ] = await Promise.all([
+          supabase
+            .from("appointments")
+            .select("*, services(name, sale_price), clients(name)")
+            .gte("appointment_at", dateRange.from.toISOString())
+            .lte("appointment_at", dateRange.to.toISOString())
+            .in("status", ["COMPLETED", "PAID"]),
+          supabase
+            .from("appointments")
+            .select("price_at_time")
+            .gte("appointment_at", prevPeriodStart.toISOString())
+            .lte("appointment_at", prevPeriodEnd.toISOString())
+            .in("status", ["COMPLETED", "PAID"]),
+          supabase
+            .from("appointments")
+            .select("client_id")
+            .gte("appointment_at", prevMonthStart.toISOString())
+            .lte("appointment_at", prevMonthEnd.toISOString())
+            .in("status", ["COMPLETED", "PAID"]),
+          supabase
+            .from("appointments")
+            .select("client_id")
+            .gte("appointment_at", prevPrevMonthStart.toISOString())
+            .lte("appointment_at", prevPrevMonthEnd.toISOString())
+            .in("status", ["COMPLETED", "PAID"]),
+        ]);
+
+        if (currentPeriodRes.error) throw currentPeriodRes.error;
+        if (prevPeriodRes.error) throw prevPeriodRes.error;
+        if (prevMonthRes.error) throw prevMonthRes.error;
+        if (prevPrevMonthRes.error) throw prevPrevMonthRes.error;
+
+        setAppointmentsData(currentPeriodRes.data || []);
+        setPrevPeriodAppointments(prevPeriodRes.data || []);
+        setPrevMonthAppointments(prevMonthRes.data || []);
+        setPrevPrevMonthAppointments(prevPrevMonthRes.data || []);
       } catch (err) {
         console.error("Error fetching analytics data:", err);
         setError("No se pudieron cargar los datos de análisis.");
@@ -97,120 +139,94 @@ const Analitica = () => {
     };
 
     fetchAnalyticsData();
-  }, [dateRange]); // Este efecto se ejecutará cada vez que cambie el `dateRange`
-
+  }, [dateRange]);
   // --- useMemo para procesar los datos reales ---
   // Aquí es donde calcularemos todas las estadísticas basadas en `appointmentsData`
   const analyticsData = useMemo(() => {
-    if (!appointmentsData || appointmentsData.length === 0) {
-      // Devolvemos una estructura por defecto para evitar errores en los componentes hijos
-      return {
-        totalRevenue: 0,
-        totalAppointments: 0,
-        services: [],
-        topClients: [],
-        dailyData: [],
-        serviceProfitData: [],
-        benchmarkData: { user: {}, industry: {} },
-        historicalData: [],
-      };
-    }
+        if (!appointmentsData) return {};
 
-    // 1. Calcular totales
-    const totalRevenue = appointmentsData.reduce(
-      (acc, app) => acc + (app.price_at_time || 0),
-      0
-    );
-    const totalAppointments = appointmentsData.length;
+        const totalRevenue = appointmentsData.reduce((acc, app) => acc + (app.price_at_time || 0), 0);
+        const totalAppointments = appointmentsData.length;
+        const averageTicket = totalAppointments > 0 ? totalRevenue / totalAppointments : 0;
 
-    // 2. Agrupar datos por servicio
-    const servicesMap = new Map();
-    appointmentsData.forEach((app) => {
-      const serviceName = app.services?.name || "Servicio Desconocido";
-      if (!servicesMap.has(serviceName)) {
-        servicesMap.set(serviceName, { revenue: 0, appointments: 0 });
-      }
-      const current = servicesMap.get(serviceName);
-      current.revenue += app.price_at_time || 0;
-      current.appointments += 1;
-    });
-    const services = Array.from(servicesMap, ([name, data]) => ({
-      name,
-      ...data,
-    })).sort((a, b) => b.revenue - a.revenue);
+        const prevTotalRevenue = prevPeriodAppointments.reduce((acc, app) => acc + (app.price_at_time || 0), 0);
+        const prevTotalAppointments = prevPeriodAppointments.length;
+        const prevAverageTicket = prevTotalAppointments > 0 ? prevTotalRevenue / prevTotalAppointments : 0;
 
-    // 3. Agrupar datos por cliente
-    const clientsMap = new Map();
-    appointmentsData.forEach((app) => {
-      if (app.client_id && app.clients) {
-        if (!clientsMap.has(app.client_id)) {
-          clientsMap.set(app.client_id, {
-            name: app.clients.name,
-            visits: 0,
-            spent: 0,
-          });
-        }
-        const current = clientsMap.get(app.client_id);
-        current.visits += 1;
-        current.spent += app.price_at_time || 0;
-      }
-    });
-    const topClients = Array.from(clientsMap.values())
-      .sort((a, b) => b.spent - a.spent)
-      .slice(0, 5)
-      .map((client) => ({
-        ...client,
-        avatar: client.name.substring(0, 2).toUpperCase(),
-      }));
+        const calculateChange = (current, previous) => {
+            if (previous === 0) return current > 0 ? 100 : 0;
+            return ((current - previous) / previous) * 100;
+        };
 
-    // 4. Agrupar datos por día
-    const dailyMap = new Map();
-    appointmentsData.forEach((app) => {
-      const date = format(parseISO(app.appointment_at), "yyyy-MM-dd");
-      if (!dailyMap.has(date)) {
-        dailyMap.set(date, { revenue: 0, appointments: 0 });
-      }
-      const current = dailyMap.get(date);
-      current.revenue += app.price_at_time || 0;
-      current.appointments += 1;
-    });
-    const dailyData = Array.from(dailyMap, ([date, data]) => ({
-      date,
-      day: format(parseISO(date), "dd"),
-      ...data,
-    })).sort((a, b) => a.date.localeCompare(b.date));
+        const revenueChange = calculateChange(totalRevenue, prevTotalRevenue);
+        const avgTicketChange = calculateChange(averageTicket, prevAverageTicket);
 
-    // 5. Generar datos derivados (con placeholders por ahora)
-    const serviceProfitData = services.map((s) => ({
-      ...s,
-      costs: s.revenue * 0.3, // Costo de ejemplo
-      margin: 70, // Margen de ejemplo
-    }));
+        const calculateRetention = (currentPeriod, previousPeriod) => {
+            if (previousPeriod.length === 0) return 0;
+            const prevClientIds = new Set(previousPeriod.map(a => a.client_id));
+            const currentClientIds = new Set(currentPeriod.map(a => a.client_id));
+            let retainedCount = 0;
+            for (const id of prevClientIds) {
+                if (currentClientIds.has(id)) {
+                    retainedCount++;
+                }
+            }
+            return (retainedCount / prevClientIds.size) * 100;
+        };
+        
+        const retentionRate = calculateRetention(appointmentsData, prevMonthAppointments);
+        const prevRetentionRate = calculateRetention(prevMonthAppointments, prevPrevMonthAppointments);
+        const retentionChange = retentionRate - prevRetentionRate;
 
-    const benchmarkData = {
-      user: {
-        revenue: totalRevenue,
-        retention: 0,
-        avgTicket: totalAppointments > 0 ? totalRevenue / totalAppointments : 0,
-      },
-      industry: { revenue: 18000, retention: 65, avgTicket: 50 },
-    };
+        const servicesMap = new Map();
+        const clientsMap = new Map();
+        const dailyMap = new Map();
 
-    const historicalData = [
-      { name: dayjs().format("MMM"), revenue: totalRevenue },
-    ];
+        appointmentsData.forEach(app => {
+            const serviceName = app.services?.name || 'Servicio Desconocido';
+            if (!servicesMap.has(serviceName)) {
+                servicesMap.set(serviceName, { revenue: 0, appointments: 0 });
+            }
+            const currentService = servicesMap.get(serviceName);
+            currentService.revenue += app.price_at_time || 0;
+            currentService.appointments += 1;
 
-    return {
-      totalRevenue,
-      totalAppointments,
-      services,
-      topClients,
-      dailyData,
-      serviceProfitData,
-      benchmarkData,
-      historicalData,
-    };
-  }, [appointmentsData]);
+            if (app.client_id && app.clients) {
+                if (!clientsMap.has(app.client_id)) {
+                    clientsMap.set(app.client_id, { name: app.clients.name, visits: 0, spent: 0 });
+                }
+                const currentClient = clientsMap.get(app.client_id);
+                currentClient.visits += 1;
+                currentClient.spent += app.price_at_time || 0;
+            }
+
+            const date = format(parseISO(app.appointment_at), 'yyyy-MM-dd');
+            if (!dailyMap.has(date)) {
+                dailyMap.set(date, { revenue: 0, appointments: 0 });
+            }
+            const currentDay = dailyMap.get(date);
+            currentDay.revenue += app.price_at_time || 0;
+            currentDay.appointments += 1;
+        });
+
+        const services = Array.from(servicesMap, ([name, data]) => ({ name, ...data })).sort((a, b) => b.revenue - a.revenue);
+        const topClients = Array.from(clientsMap.values()).sort((a, b) => b.spent - a.spent).slice(0, 5).map(client => ({ ...client, avatar: client.name.substring(0, 2).toUpperCase() }));
+        const dailyData = Array.from(dailyMap, ([date, data]) => ({ date, day: format(parseISO(date), 'dd'), ...data })).sort((a, b) => a.date.localeCompare(b.date));
+
+        return {
+            totalRevenue,
+            totalAppointments,
+            averageTicket,
+            retentionRate,
+            revenueChange,
+            avgTicketChange,
+            retentionChange,
+            services,
+            topClients,
+            dailyData,
+        };
+    }, [appointmentsData, prevPeriodAppointments, prevMonthAppointments, prevPrevMonthAppointments]);
+    
   const TABS_CONFIG = [
     { value: "resumen", label: "Resumen", icon: BarChart2 },
     { value: "servicios", label: "Servicios", icon: PieChart },
@@ -308,13 +324,13 @@ const Analitica = () => {
               setSelectedDays={setSelectedDays}
             />
             <PeriodPicker dateRange={dateRange} setDateRange={setDateRange} />
-            <Button
+           { /*<Button
               variant="primary"
               onClick={handleExport}
               className="hidden sm:flex"
             >
               <Download className="w-4 h-4 mr-2" /> Exportar
-            </Button>
+            </Button>*/}
           </div>
         </motion.div>
 

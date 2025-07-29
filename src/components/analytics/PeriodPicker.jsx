@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -13,12 +13,8 @@ dayjs.locale('es');
 
 const PeriodPicker = ({ dateRange, setDateRange }) => {
     const [popoverOpen, setPopoverOpen] = useState(false);
-    // Estado interno para controlar el mes que se muestra en el calendario,
-    // sin afectar el rango de fechas seleccionado.
     const [displayMonth, setDisplayMonth] = useState(dateRange?.from || new Date());
 
-    // CORRECCIÓN: Usamos useEffect para cerrar el popover solo cuando el rango está completo.
-    // Esto evita que se cierre después del primer clic.
     useEffect(() => {
         if (dateRange?.from && dateRange?.to) {
             setPopoverOpen(false);
@@ -42,10 +38,47 @@ const PeriodPicker = ({ dateRange, setDateRange }) => {
         setDisplayMonth(newRange.from);
     };
 
+    // --- FUNCIÓN CORREGIDA ---
+    // Ahora, al hacer clic en las flechas, se actualiza el rango de fechas seleccionado.
     const navigateMonth = (direction) => {
-        const newDisplayMonth = direction === 'prev' ? subMonths(displayMonth, 1) : addMonths(displayMonth, 1);
-        setDisplayMonth(newDisplayMonth);
+        // Usamos la fecha de inicio del rango actual como base para navegar.
+        const baseDate = dateRange?.from || new Date();
+        
+        // Calculamos el primer día del nuevo mes.
+        const newMonth = direction === 'prev' ? subMonths(baseDate, 1) : addMonths(baseDate, 1);
+
+        // Creamos el nuevo rango de fechas para el mes completo.
+        const newRange = {
+            from: startOfMonth(newMonth),
+            to: endOfMonth(newMonth),
+        };
+
+        // Actualizamos el estado que controla el rango seleccionado.
+        setDateRange(newRange);
+        
+        // También actualizamos el mes que se muestra en el calendario para consistencia.
+        setDisplayMonth(newMonth);
     };
+
+    // --- MEJORA DE UX: Muestra el nombre del mes si se selecciona un mes completo ---
+    const displayLabel = useMemo(() => {
+        if (!dateRange || !dateRange.from) {
+            return <span>Selecciona un periodo</span>;
+        }
+        
+        const from = dateRange.from;
+        const to = dateRange.to || from;
+
+        const isFullMonth = 
+            dayjs(from).isSame(startOfMonth(from), 'day') &&
+            dayjs(to).isSame(endOfMonth(from), 'day');
+
+        if (isFullMonth) {
+            return <span className="capitalize">{dayjs(from).format('MMMM YYYY')}</span>;
+        }
+
+        return `${dayjs(from).format('DD/MM/YY')} - ${dayjs(to).format('DD/MM/YY')}`;
+    }, [dateRange]);
 
     return (
         <div className="flex items-center gap-1">
@@ -70,10 +103,7 @@ const PeriodPicker = ({ dateRange, setDateRange }) => {
                         )}
                     >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateRange?.from
-                            ? `${dayjs(dateRange.from).format('DD/MM/YY')} - ${dayjs(dateRange.to).format('DD/MM/YY')}`
-                            : <span>Selecciona un periodo</span>
-                        }
+                        {displayLabel}
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 flex" align="start">
@@ -88,8 +118,6 @@ const PeriodPicker = ({ dateRange, setDateRange }) => {
                     <Calendar
                         mode="range"
                         selected={dateRange}
-                        // El onSelect ahora solo se encarga de actualizar el estado del rango.
-                        // El useEffect se encargará de cerrar el popover.
                         onSelect={setDateRange}
                         month={displayMonth}
                         onMonthChange={setDisplayMonth}

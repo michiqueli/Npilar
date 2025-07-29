@@ -65,7 +65,7 @@ const FinancialReports = ({ transactions, period }) => {
     <div className="space-y-6">
       <div className="premium-card p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-card-foreground flex items-center">
+         {/*  <h3 className="text-xl font-semibold text-card-foreground flex items-center">
             <BarChart3 className="w-5 h-5 mr-2 text-primary" />
             Reporte Financiero - {period}
           </h3>
@@ -73,6 +73,7 @@ const FinancialReports = ({ transactions, period }) => {
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
+          */}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

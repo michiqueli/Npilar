@@ -1,4 +1,7 @@
 node_modules
+plugins
 .qodo
 .env
 dist
+.vscode
+.DS_Store

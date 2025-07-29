@@ -281,9 +281,9 @@ const Clientes = () => {
                                     Importar desde CSV
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleFeatureNotImplemented('Exportar CSV')}>
+                                {/*<DropdownMenuItem onClick={() => handleFeatureNotImplemented('Exportar CSV')}>
                                     Exportar a CSV
-                                </DropdownMenuItem>
+                                </DropdownMenuItem>*/}
                             </DropdownMenuContent>
                         </DropdownMenu>
 
