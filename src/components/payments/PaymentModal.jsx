@@ -11,8 +11,6 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { supabase } from '@/lib/supabaseClient'; // Usamos la ruta correcta
-import { useToast } from '@/components/ui/use-toast';
 
 const paymentMethods = [
     { value: 'Efectivo', label: 'Efectivo', icon: DollarSign },
@@ -21,49 +19,27 @@ const paymentMethods = [
     { value: 'Otro', label: 'Otro', icon: HelpCircle },
 ];
 
-const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData = {}, clients = [] }) => {
-    const { toast } = useToast();
-    const [services, setServices] = useState([]);
+const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData = {}, clients = [], services = [] }) => {
     const [formData, setFormData] = useState({
         date: new Date(),
         clientId: '',
         clientName: '',
-        serviceName: '',
+        serviceId: '', // Guardaremos el ID del servicio
         amount: '',
         paymentMethod: 'Efectivo',
-        notes: '', // Cambiado de 'comment' a 'notes' para consistencia
+        notes: '',
     });
     const [clientSearch, setClientSearch] = useState('');
 
-    // --- NUEVO: Cargar servicios activos desde Supabase cuando el modal se abre ---
     useEffect(() => {
         if (isOpen) {
-            const fetchServices = async () => {
-                try {
-                    const { data, error } = await supabase
-                        .from('services')
-                        .select('*')
-                        .eq('active', true); // Solo trae servicios activos
-
-                    if (error) throw error;
-                    setServices(data || []);
-                } catch (error) {
-                    console.error("Error fetching services:", error);
-                    toast({ variant: "destructive", title: "Error", description: "No se pudo cargar la lista de servicios." });
-                }
-            };
-            fetchServices();
-        }
-    }, [isOpen, toast]);
-
-    // --- MODIFICADO: useEffect para rellenar el formulario ---
-    useEffect(() => {
-        if (isOpen) {
+            const initialDate = prefillData.date ? new Date(prefillData.date) : new Date();
+            
             setFormData({
-                date: prefillData.date ? new Date(prefillData.date) : new Date(),
+                date: initialDate,
                 clientId: prefillData.client?.id || '',
                 clientName: prefillData.client?.name || '',
-                serviceName: prefillData.service || '',
+                serviceId: prefillData.serviceId || '',
                 amount: prefillData.amount ? prefillData.amount.toString() : '',
                 paymentMethod: 'Efectivo',
                 notes: '',
@@ -81,7 +57,7 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
         if (selectedService) {
             setFormData(prev => ({
                 ...prev,
-                serviceName: selectedService.name,
+                serviceId: selectedService.id,
                 amount: selectedService.sale_price.toString()
             }));
         }
@@ -95,18 +71,14 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!formData.amount || parseFloat(formData.amount) <= 0) {
-            toast({ variant: "destructive", title: "Monto inválido", description: "El monto debe ser un número positivo." });
-            return;
-        }
-        if (isManual && !formData.clientId && !formData.clientName) {
-            toast({ variant: "destructive", title: "Cliente no seleccionado", description: "Por favor, selecciona o escribe el nombre de un cliente." });
+            alert('El monto debe ser un número positivo.');
             return;
         }
         
         onSave({
             ...formData,
             amount: parseFloat(formData.amount),
-            type: 'income', // Para que FinancialDashboard sepa qué hacer
+            type: 'income',
         });
     };
 
@@ -133,24 +105,13 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
                             <Label htmlFor="date">Fecha</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "w-full justify-start text-left font-normal mt-1",
-                                            !formData.date && "text-muted-foreground"
-                                        )}
-                                    >
+                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal mt-1", !formData.date && "text-muted-foreground")}>
                                         <CalendarIcon className="mr-2 h-4 w-4" />
                                         {formData.date ? format(formData.date, "PPP", { locale: es }) : <span>Elige una fecha</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={formData.date}
-                                        onSelect={(date) => handleChange('date', date)}
-                                        initialFocus
-                                    />
+                                    <Calendar mode="single" selected={formData.date} onSelect={(date) => handleChange('date', date)} initialFocus />
                                 </PopoverContent>
                             </Popover>
                         </div>
@@ -158,7 +119,7 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
                         <div>
                             <Label htmlFor="service">Servicio</Label>
                             {isManual ? (
-                                <Select onValueChange={handleServiceChange}>
+                                <Select onValueChange={handleServiceChange} value={formData.serviceId?.toString()}>
                                     <SelectTrigger id="service" className="mt-1">
                                         <SelectValue placeholder="Seleccionar servicio" />
                                     </SelectTrigger>
@@ -171,7 +132,7 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
                                     </SelectContent>
                                 </Select>
                             ) : (
-                                <Input value={formData.serviceName} className="mt-1" readOnly disabled />
+                                <Input value={prefillData.service || ''} className="mt-1" readOnly disabled />
                             )}
                         </div>
                     </div>
@@ -182,21 +143,12 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
                             <div className="space-y-2 mt-1">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <Input
-                                        placeholder="Buscar cliente..."
-                                        value={clientSearch}
-                                        onChange={(e) => setClientSearch(e.target.value)}
-                                        className="pl-10"
-                                    />
+                                    <Input placeholder="Buscar cliente..." value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} className="pl-10" />
                                 </div>
                                 {clientSearch && filteredClients.length > 0 && (
                                     <div className="max-h-32 overflow-y-auto space-y-1 border rounded-lg p-2">
                                         {filteredClients.map(client => (
-                                            <button
-                                                key={client.id} type="button"
-                                                onClick={() => handleClientSelect(client)}
-                                                className="w-full text-left p-2 rounded hover:bg-accent"
-                                            >
+                                            <button key={client.id} type="button" onClick={() => handleClientSelect(client)} className="w-full text-left p-2 rounded hover:bg-accent">
                                                 <div className="flex items-center space-x-2"><User className="w-4 h-4" /><span>{client.name}</span></div>
                                             </button>
                                         ))}
@@ -215,13 +167,7 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
                         <Label htmlFor="amount">Monto ($)</Label>
                         <div className="relative mt-1">
                             <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                            <Input
-                                id="amount" type="number" step="0.01"
-                                value={formData.amount}
-                                onChange={(e) => handleChange('amount', e.target.value)}
-                                className="pl-10 font-bold"
-                                placeholder="0.00" required
-                            />
+                            <Input id="amount" type="number" step="0.01" value={formData.amount} onChange={(e) => handleChange('amount', e.target.value)} className="pl-10 font-bold" placeholder="0.00" required />
                         </div>
                     </div>
 
@@ -232,16 +178,10 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
                                 const Icon = method.icon;
                                 const isSelected = formData.paymentMethod === method.value;
                                 return (
-                                    <button
-                                        key={method.value} type="button"
-                                        onClick={() => handleChange('paymentMethod', method.value)}
-                                        className={cn(
-                                            'flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all duration-200',
-                                            isSelected 
-                                                ? 'border-primary bg-primary/10 text-primary font-bold' 
-                                                : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'
-                                        )}
-                                    >
+                                    <button key={method.value} type="button" onClick={() => handleChange('paymentMethod', method.value)}
+                                        className={cn('flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all duration-200',
+                                            isSelected ? 'border-primary bg-primary/10 text-primary font-bold' : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                                        )}>
                                         <Icon className="w-6 h-6 mb-1" />
                                         <span className="text-xs font-medium">{method.label}</span>
                                     </button>
@@ -252,20 +192,12 @@ const PaymentModal = ({ isOpen, onClose, onSave, isManual = false, prefillData =
 
                     <div>
                         <Label htmlFor="notes">Notas (opcional)</Label>
-                        <Textarea
-                            id="notes"
-                            value={formData.notes}
-                            onChange={(e) => handleChange('notes', e.target.value)}
-                            placeholder="Añadir una nota sobre el pago..."
-                            className="mt-1"
-                        />
+                        <Textarea id="notes" value={formData.notes} onChange={(e) => handleChange('notes', e.target.value)} placeholder="Añadir una nota sobre el pago..." className="mt-1" />
                     </div>
 
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button type="button" variant="secondary" className="w-full sm:w-auto">
-                                Cancelar
-                            </Button>
+                            <Button type="button" variant="secondary" className="w-full sm:w-auto">Cancelar</Button>
                         </DialogClose>
                         <Button type="submit" className="w-full sm:w-auto">
                             <DollarSign className="w-4 h-4 mr-2" />

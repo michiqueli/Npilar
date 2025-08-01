@@ -1,13 +1,12 @@
+
 import React from 'react';
 import { ResponsiveContainer, XAxis, YAxis, Tooltip, Bar, ComposedChart, Line } from 'recharts';
 
 const HistoricTab = ({ analyticsData }) => {
-    // Agregamos una comprobación para evitar errores si los datos aún no están listos.
     if (!analyticsData || !analyticsData.benchmarkData || !analyticsData.historicalData) {
         return <div>Cargando datos históricos...</div>;
     }
 
-    // Extraemos los datos para que el código sea más limpio.
     const { benchmarkData, historicalData } = analyticsData;
     const { user, industry } = benchmarkData;
 
@@ -23,7 +22,7 @@ const HistoricTab = ({ analyticsData }) => {
                     </div>
                     <div>
                         <p className="text-muted-foreground text-sm">Tasa de Retención</p>
-                        <p className="text-2xl font-bold text-primary">{user.retention || 0}%</p>
+                        <p className="text-2xl font-bold text-primary">{(user.retention || 0).toFixed(1)}%</p>
                         <p className="text-xs text-success">vs. {industry.retention || 0}% (promedio)</p>
                     </div>
                     <div>

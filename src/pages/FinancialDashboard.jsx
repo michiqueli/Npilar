@@ -18,36 +18,40 @@ const FinancialDashboard = () => {
   const { toast } = useToast();
   const [allTransactions, setAllTransactions] = useState([]);
   const [clients, setClients] = useState([]);
+  const [services, setServices] = useState([]); // Estado para los servicios
   const [loading, setLoading] = useState(true);
   const [isIncomeModalOpen, setIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setExpenseModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [filters, setFilters] = useState(null);
 
-  // --- NUEVO: useEffect para cargar todas las transacciones desde Supabase ---
   useEffect(() => {
     const fetchFinancialData = async () => {
       setLoading(true);
       try {
-        // Cargamos pagos, gastos y clientes en paralelo
-        const [paymentsRes, expensesRes, clientsRes] = await Promise.all([
-          supabase
-            .from("payments")
-            .select("*, clients(id, name), appointments(id, services(name))"),
-          supabase.from("expenses").select("*"),
-          supabase.from("clients").select("*"),
-        ]);
+        // Cargamos pagos, gastos, clientes y servicios en paralelo
+        const [paymentsRes, expensesRes, clientsRes, servicesRes] =
+          await Promise.all([
+            supabase
+              .from("payments")
+              .select("*, clients(id, name), services(id, name)"), // Pedimos el servicio asociado al pago
+            supabase.from("expenses").select("*"),
+            supabase.from("clients").select("*"),
+            supabase.from("services").select("*").eq("active", true), // Cargamos los servicios activos
+          ]);
 
         if (paymentsRes.error) throw paymentsRes.error;
         if (expensesRes.error) throw expensesRes.error;
         if (clientsRes.error) throw clientsRes.error;
+        if (servicesRes.error) throw servicesRes.error;
 
         // Transformamos los pagos al formato unificado de transacciones
         const incomeTransactions = (paymentsRes.data || []).map((p) => ({
           id: p.id,
           type: "income",
           clientName: p.clients?.name || "Cliente no especificado",
-          service: p.appointments?.services?.name || "Ingreso manual",
+          // Si el pago tiene un service_id, usamos ese nombre. Si no, es un ingreso genérico.
+          service: p.services?.name || "Ingreso manual",
           amount: p.amount,
           paymentMethod: p.method,
           date: p.payment_at,
@@ -60,14 +64,13 @@ const FinancialDashboard = () => {
           id: e.id,
           type: "expense",
           description: e.description,
-          category: "Gastos", // Puedes añadir una columna de categoría a tu tabla de gastos si quieres
+          category: "Gastos",
           amount: e.amount,
-          paymentMethod: "N/A", // La tabla de gastos no tiene método de pago
+          paymentMethod: "N/A",
           date: e.expense_date,
           receipt: !!e.image_url,
         }));
 
-        // Unimos y ordenamos todas las transacciones por fecha
         const combinedTransactions = [
           ...incomeTransactions,
           ...expenseTransactions,
@@ -75,6 +78,7 @@ const FinancialDashboard = () => {
 
         setAllTransactions(combinedTransactions);
         setClients(clientsRes.data || []);
+        setServices(servicesRes.data || []); // Guardamos los servicios en el estado
       } catch (error) {
         console.error("Error fetching financial data:", error);
         toast({
@@ -113,7 +117,7 @@ const FinancialDashboard = () => {
 
       if (filters.category) {
         if (t.type === "income" && t.service !== filters.category) return false;
-        if (t.type === "expense" && t.category !== filters.category)
+        if (t.type === "expense" && t.description !== filters.category)
           return false;
       }
 
@@ -140,22 +144,21 @@ const FinancialDashboard = () => {
     return { totalIncome, totalExpenses, netProfit, avgTicket };
   }, [allTransactions, filteredTransactions, filters]);
 
-  // --- NUEVO: handleSaveTransaction modificado para Supabase ---
   const handleSaveTransaction = async (transactionData) => {
     try {
       if (transactionData.type === "income") {
-        // Lógica para guardar un INGRESO
         const { data, error } = await supabase
           .from("payments")
           .insert({
             client_id: transactionData.clientId,
+            service_id: transactionData.serviceId, // Guardamos el service_id
             amount: transactionData.amount,
             method: transactionData.paymentMethod,
             status: "COMPLETED",
             notes: transactionData.notes,
             payment_at: new Date().toISOString(),
           })
-          .select("*, clients(id, name)")
+          .select("*, clients(id, name), services(id, name)")
           .single();
 
         if (error) throw error;
@@ -163,8 +166,8 @@ const FinancialDashboard = () => {
         const newTransaction = {
           id: data.id,
           type: "income",
-          clientName: data.clients.name,
-          service: "Ingreso manual",
+          clientName: data.clients?.name || "Cliente",
+          service: data.services?.name || "Ingreso manual",
           amount: data.amount,
           paymentMethod: data.method,
           date: data.payment_at,
@@ -176,7 +179,6 @@ const FinancialDashboard = () => {
           description: "El pago ha sido añadido a tu caja.",
         });
       } else if (transactionData.type === "expense") {
-        // Lógica para guardar un GASTO
         const { data, error } = await supabase
           .from("expenses")
           .insert({
@@ -248,7 +250,8 @@ const FinancialDashboard = () => {
             onOpenIncomeModal={openIncomeModal}
             onOpenExpenseModal={openExpenseModal}
           />
-        </div >
+        </div>
+
         <FilterBar
           onApplyFilters={setFilters}
           onClearFilters={() => setFilters(null)}
@@ -272,6 +275,13 @@ const FinancialDashboard = () => {
         )}
       </div>
 
+      <div className="md:hidden fixed bottom-4 right-4 z-50">
+        <FinancialActions
+          onOpenIncomeModal={openIncomeModal}
+          onOpenExpenseModal={openExpenseModal}
+        />
+      </div>
+
       <PaymentModal
         isOpen={isIncomeModalOpen}
         onClose={() => setIncomeModalOpen(false)}
@@ -279,6 +289,7 @@ const FinancialDashboard = () => {
         isManual={true}
         prefillData={editingTransaction || {}}
         clients={clients}
+        services={services} // Pasamos la lista de servicios al modal
       />
 
       <Dialog open={isExpenseModalOpen} onOpenChange={setExpenseModalOpen}>

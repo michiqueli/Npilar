@@ -3,10 +3,8 @@ import ProfitMarginTable from '@/components/analytics/ProfitMarginTable';
 import { Progress } from '@/components/ui/progress';
 import ServicesPieChart from '@/components/analytics/ServicesPieChart';
 
-// CORRECCIÓN: Cambiamos `analiticsData` por `analyticsData` para que coincida con la prop del padre.
 const ServicesTab = ({ analyticsData }) => {
-    // Agregamos una comprobación para evitar errores si los datos aún no están listos.
-    if (!analyticsData || !analyticsData.services) {
+    if (!analyticsData || !analyticsData.services || !analyticsData.serviceProfitData) {
         return <div>Cargando datos de servicios...</div>;
     }
 
@@ -23,7 +21,6 @@ const ServicesTab = ({ analyticsData }) => {
                                     <span className="font-medium text-sm text-foreground">{service.name}</span>
                                     <span className="text-sm text-muted-foreground">{service.appointments} citas</span>
                                 </div>
-                                {/* Evitamos la división por cero si no hay citas totales */}
                                 <Progress value={analyticsData.totalAppointments > 0 ? (service.appointments / analyticsData.totalAppointments) * 100 : 0} />
                             </div>
                         ))}
