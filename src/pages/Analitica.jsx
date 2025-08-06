@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
-import { startOfMonth, endOfMonth, parseISO, format, subMonths, differenceInDays, subDays, eachDayOfInterval, getDay } from 'date-fns';
+import { startOfMonth, endOfMonth, parseISO, format, subMonths, differenceInDays, subDays, eachDayOfInterval, getDay, startOfDay } from 'date-fns';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import {
@@ -10,8 +10,7 @@ import {
     PieChart,
     TrendingUp,
     Download,
-    Wallet,
-    ChevronDown
+    Wallet
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -39,6 +38,7 @@ const Analitica = () => {
     const [prevMonthAppointments, setPrevMonthAppointments] = useState([]);
     const [prevPrevMonthAppointments, setPrevPrevMonthAppointments] = useState([]);
     const [historicalAppointments, setHistoricalAppointments] = useState([]);
+    const [heatmapAppointments, setHeatmapAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -70,8 +70,9 @@ const Analitica = () => {
                 const sixMonthsAgo = startOfMonth(subMonths(new Date(), 6));
                 const currentMonthStart = startOfMonth(new Date());
                 const currentMonthEnd = endOfMonth(new Date());
+                const ninetyDaysAgo = startOfDay(subDays(new Date(), 90));
 
-                const [currentPeriodRes, currentPaymentsRes, currentMonthPaymentsRes, prevPeriodPaymentsRes, prevPeriodAppointmentsRes, prevMonthRes, prevPrevMonthRes, historicalRes] = await Promise.all([
+                const [currentPeriodRes, currentPaymentsRes, currentMonthPaymentsRes, prevPeriodPaymentsRes, prevPeriodAppointmentsRes, prevMonthRes, prevPrevMonthRes, historicalRes, heatmapRes] = await Promise.all([
                     supabase.from('appointments').select('*, services(name, sale_price, service_cost), clients(id, name, total_visits)').gte('appointment_at', dateRange.from.toISOString()).lte('appointment_at', dateRange.to.toISOString()).in('status', ['COMPLETED', 'PAID']),
                     supabase.from('payments').select('*, services(name, service_cost)').gte('payment_at', dateRange.from.toISOString()).lte('payment_at', dateRange.to.toISOString()),
                     supabase.from('payments').select('amount').gte('payment_at', currentMonthStart.toISOString()).lte('payment_at', currentMonthEnd.toISOString()),
@@ -79,7 +80,8 @@ const Analitica = () => {
                     supabase.from('appointments').select('id').gte('appointment_at', prevPeriodStart.toISOString()).lte('appointment_at', prevPeriodEnd.toISOString()).in('status', ['COMPLETED', 'PAID']),
                     supabase.from('appointments').select('client_id').gte('appointment_at', prevMonthStart.toISOString()).lte('appointment_at', prevMonthEnd.toISOString()).in('status', ['COMPLETED', 'PAID']),
                     supabase.from('appointments').select('client_id').gte('appointment_at', prevPrevMonthStart.toISOString()).lte('appointment_at', prevPrevMonthEnd.toISOString()).in('status', ['COMPLETED', 'PAID']),
-                    supabase.from('appointments').select('appointment_at, price_at_time').gte('appointment_at', sixMonthsAgo.toISOString()).in('status', ['COMPLETED', 'PAID'])
+                    supabase.from('appointments').select('appointment_at, price_at_time').gte('appointment_at', sixMonthsAgo.toISOString()).in('status', ['COMPLETED', 'PAID']),
+                    supabase.from('appointments').select('appointment_at').gte('appointment_at', ninetyDaysAgo.toISOString()).in('status', ['COMPLETED', 'PAID'])
                 ]);
 
                 if (currentPeriodRes.error) throw currentPeriodRes.error;
@@ -90,6 +92,7 @@ const Analitica = () => {
                 if (prevMonthRes.error) throw prevMonthRes.error;
                 if (prevPrevMonthRes.error) throw prevPrevMonthRes.error;
                 if (historicalRes.error) throw historicalRes.error;
+                if (heatmapRes.error) throw heatmapRes.error;
 
                 setAppointmentsData(currentPeriodRes.data || []);
                 setPaymentsData(currentPaymentsRes.data || []);
@@ -99,6 +102,7 @@ const Analitica = () => {
                 setPrevMonthAppointments(prevMonthRes.data || []);
                 setPrevPrevMonthAppointments(prevPrevMonthRes.data || []);
                 setHistoricalAppointments(historicalRes.data || []);
+                setHeatmapAppointments(heatmapRes.data || []);
 
             } catch (err) {
                 console.error("Error fetching analytics data:", err);
@@ -148,6 +152,7 @@ const Analitica = () => {
         const servicesMap = new Map();
         const clientsMap = new Map();
         const dailyMap = new Map();
+        const occupancyMap = new Map();
 
         const processService = (service, amount, isAppointment) => {
             if (!service) return;
@@ -196,6 +201,36 @@ const Analitica = () => {
             return { name: s.name, revenue: s.revenue, appointments: s.total_sales, costs: totalCosts, margin };
         });
 
+        // --- LÓGICA DE MAPA DE CALOR CORREGIDA Y MEJORADA ---
+        const weekDayMap = { 0: 'Dom', 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb' };
+        const dayOccurrences = { 'Dom': 0, 'Lun': 0, 'Mar': 0, 'Mié': 0, 'Jue': 0, 'Vie': 0, 'Sáb': 0 };
+        const ninetyDaysAgo = subDays(new Date(), 90);
+        eachDayOfInterval({ start: ninetyDaysAgo, end: new Date() }).forEach(day => {
+            dayOccurrences[weekDayMap[getDay(day)]]++;
+        });
+
+        heatmapAppointments.forEach(app => {
+            const appDate = parseISO(app.appointment_at);
+            const dayOfWeek = weekDayMap[getDay(appDate)];
+            const hour = format(appDate, 'HH:00');
+            const key = `${dayOfWeek}-${hour}`;
+            if (!occupancyMap.has(key)) {
+                occupancyMap.set(key, { count: 0 });
+            }
+            occupancyMap.get(key).count += 1;
+        });
+
+        const occupancyData = Array.from(occupancyMap, ([key, value]) => {
+            const [day, hour] = key.split('-');
+            const totalPossibleSlots = dayOccurrences[day] || 1; // Evitar división por cero
+            return {
+                day,
+                hour,
+                occupancy: value.count / totalPossibleSlots,
+                appointments: value.count
+            };
+        });
+
         const benchmarkData = {
             user: { revenue: periodTotalRevenue, retention: retentionRate, avgTicket: averageTicket },
             industry: { revenue: 18000, retention: 65, avgTicket: 50 },
@@ -209,23 +244,12 @@ const Analitica = () => {
         const historicalData = Object.keys(monthlyRevenue).map(name => ({ name, revenue: monthlyRevenue[name] }));
 
         return {
-            periodTotalRevenue,
-            currentMonthTotalRevenue,
-            totalAppointments,
-            averageTicket,
-            newClients,
-            retentionRate,
-            revenueChange,
-            avgTicketChange,
-            retentionChange,
-            services,
-            topClients,
-            dailyData,
-            benchmarkData,
-            historicalData,
-            serviceProfitData,
+            periodTotalRevenue, currentMonthTotalRevenue, totalAppointments, averageTicket, newClients,
+            retentionRate, revenueChange, avgTicketChange, retentionChange,
+            services, topClients, dailyData, benchmarkData, historicalData,
+            serviceProfitData, occupancyData
         };
-    }, [appointmentsData, paymentsData, currentMonthPayments, prevPeriodPayments, prevPeriodAppointments, prevMonthAppointments, prevPrevMonthAppointments, historicalAppointments]);
+    }, [appointmentsData, paymentsData, currentMonthPayments, prevPeriodPayments, prevPeriodAppointments, prevMonthAppointments, prevPrevMonthAppointments, historicalAppointments, dateRange]);
 
     if(loading) return <div>Cargando...</div>
     if(error) return <div>Error: {error}</div>

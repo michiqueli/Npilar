@@ -6,12 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import ServiceCard from '@/components/products/ServiceCard';
+import ServiceListRow from '@/components/products/ServiceListRow';
 import ServiceForm from '@/components/products/ServiceForm';
 import CategoryFilter from '@/components/products/CategoryFilter';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabaseClient';
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog';
 
 const Productos = () => {
     const { toast } = useToast();
@@ -23,21 +27,25 @@ const Productos = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('popular');
     const [viewMode, setViewMode] = useState('grid');
+    const [showInactive, setShowInactive] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [serviceToDelete, setServiceToDelete] = useState(null);
 
     const categories = useMemo(() => {
         const allCategories = new Set(['Todos']);
-        services.forEach(s => s.active && allCategories.add(s.category));
+        services.forEach(s => {
+            if (s.active === !showInactive) {
+                allCategories.add(s.category);
+            }
+        });
         return Array.from(allCategories);
-    }, [services]);
+    }, [services, showInactive]);
 
     useEffect(() => {
         const fetchServices = async () => {
             setLoading(true);
             try {
-                const { data, error } = await supabase
-                    .from('services')
-                    .select('*');
-
+                const { data, error } = await supabase.from('services').select('*');
                 if (error) throw error;
                 setServices(data || []);
             } catch (error) {
@@ -54,17 +62,17 @@ const Productos = () => {
     }, [toast]);
 
     const serviceCounts = useMemo(() => services.reduce((acc, service) => {
-        if(service.active) {
+        if (service.active === !showInactive) {
             const category = service.category || 'Sin Categoría';
             acc[category] = (acc[category] || 0) + 1;
             acc['Todos'] = (acc['Todos'] || 0) + 1;
         }
         return acc;
-    }, {}), [services]);
+    }, {}), [services, showInactive]);
 
     const filteredServices = useMemo(() => {
         return services
-            .filter(service => service.active)
+            .filter(service => service.active === !showInactive)
             .filter(service => selectedCategory === 'Todos' || service.category === selectedCategory)
             .filter(service => service.name.toLowerCase().includes(searchTerm.toLowerCase()))
             .sort((a, b) => {
@@ -77,7 +85,7 @@ const Productos = () => {
                     default: return (b.popular ? 1 : 0) - (a.popular ? 1 : 0);
                 }
             });
-    }, [services, selectedCategory, searchTerm, sortBy]);
+    }, [services, selectedCategory, searchTerm, sortBy, showInactive]);
 
     const handleOpenModal = (service = null) => {
         setSelectedService(service);
@@ -92,30 +100,16 @@ const Productos = () => {
     const handleSaveService = async (serviceData) => {
         try {
             const { id, ...dataToSave } = serviceData;
-
             if (id) {
-                const { data, error } = await supabase
-                    .from('services')
-                    .update(dataToSave)
-                    .eq('id', id)
-                    .select()
-                    .single();
-                
+                const { data, error } = await supabase.from('services').update(dataToSave).eq('id', id).select().single();
                 if (error) throw error;
-
                 setServices(services.map(s => s.id === data.id ? data : s));
-                toast({ title: "✅ Servicio Actualizado", description: "Los datos del servicio han sido guardados." });
+                toast({ title: "✅ Servicio Actualizado" });
             } else {
-                const { data, error } = await supabase
-                    .from('services')
-                    .insert(dataToSave)
-                    .select()
-                    .single();
-
+                const { data, error } = await supabase.from('services').insert(dataToSave).select().single();
                 if (error) throw error;
-
                 setServices([...services, data]);
-                toast({ title: "🎉 Servicio Agregado", description: "El nuevo servicio ha sido añadido al catálogo." });
+                toast({ title: "🎉 Servicio Agregado" });
             }
             handleCloseModal();
         } catch (error) {
@@ -126,39 +120,55 @@ const Productos = () => {
     const togglePopular = async (serviceId) => {
         const service = services.find(s => s.id === serviceId);
         if (!service) return;
-
         try {
-            const { data, error } = await supabase
-                .from('services')
-                .update({ popular: !service.popular })
-                .eq('id', serviceId)
-                .select()
-                .single();
-
+            const { data, error } = await supabase.from('services').update({ popular: !service.popular }).eq('id', serviceId).select().single();
             if (error) throw error;
-
             setServices(services.map(s => s.id === serviceId ? data : s));
-            toast({ title: "⭐ Estado Actualizado", description: "La popularidad del servicio ha sido actualizada." });
+            toast({ title: "⭐ Estado Actualizado" });
         } catch (error) {
             toast({ variant: "destructive", title: "Error al actualizar", description: error.message });
         }
     };
 
-    const handleDeleteService = async (serviceId) => {
+    const handleDeactivateService = async (serviceId) => {
         try {
-            const { data, error } = await supabase
-                .from('services')
-                .update({ active: false })
-                .eq('id', serviceId)
-                .select()
-                .single();
-
+            const { data, error } = await supabase.from('services').update({ active: false }).eq('id', serviceId).select().single();
             if (error) throw error;
-
             setServices(services.map(s => s.id === serviceId ? data : s));
-            toast({ title: "🗑️ Servicio Desactivado", description: "El servicio ha sido desactivado y no aparecerá en la lista." });
+            toast({ title: "🗑️ Servicio Desactivado" });
         } catch (error) {
-            toast({ variant: "destructive", title: "Error al eliminar", description: error.message });
+            toast({ variant: "destructive", title: "Error al desactivar", description: error.message });
+        }
+    };
+
+    const handleReactivateService = async (serviceId) => {
+        try {
+            const { data, error } = await supabase.from('services').update({ active: true }).eq('id', serviceId).select().single();
+            if (error) throw error;
+            setServices(services.map(s => s.id === serviceId ? data : s));
+            toast({ title: "✅ Servicio Reactivado" });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error al reactivar", description: error.message });
+        }
+    };
+
+    const handleDeleteService = (service) => {
+        setServiceToDelete(service);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmPermanentDelete = async () => {
+        if (!serviceToDelete) return;
+        try {
+            const { error } = await supabase.from('services').delete().eq('id', serviceToDelete.id);
+            if (error) throw error;
+            setServices(services.filter(s => s.id !== serviceToDelete.id));
+            toast({ title: "🔥 Servicio Eliminado Permanentemente" });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error al eliminar", description: "No se pudo eliminar el servicio. Es posible que esté asociado a citas existentes." });
+        } finally {
+            setIsConfirmOpen(false);
+            setServiceToDelete(null);
         }
     };
 
@@ -170,17 +180,21 @@ const Productos = () => {
             transition={{ duration: 0.5 }}
         >
             <Scissors className="w-24 h-24 mx-auto mb-6 opacity-30" />
-            <h3 className="text-2xl font-semibold text-foreground mb-2">Tu catálogo está vacío</h3>
+            <h3 className="text-2xl font-semibold text-foreground mb-2">
+                {showInactive ? "No hay servicios inactivos" : "Tu catálogo está vacío"}
+            </h3>
             <p className="mb-6 max-w-md mx-auto">
                 {searchTerm || selectedCategory !== 'Todos' 
-                    ? "No se encontraron servicios que coincidan con tu búsqueda. Intenta ajustar los filtros."
-                    : "¡Es hora de empezar! Agrega tu primer servicio para que tus clientes puedan reservarlo."
+                    ? "No se encontraron servicios que coincidan con tu búsqueda."
+                    : (showInactive ? "Todos tus servicios están activos." : "¡Es hora de empezar! Agrega tu primer servicio.")
                 }
             </p>
-            <Button onClick={() => handleOpenModal()} variant="primary" size="lg">
-                <Plus className="w-5 h-5 mr-2" />
-                Crear mi Primer Servicio
-            </Button>
+            {!showInactive && (
+                <Button onClick={() => handleOpenModal()} variant="primary" size="lg">
+                    <Plus className="w-5 h-5 mr-2" />
+                    Crear mi Primer Servicio
+                </Button>
+            )}
         </motion.div>
     );
 
@@ -198,6 +212,14 @@ const Productos = () => {
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 {isModalOpen && <ServiceForm service={selectedService} onSave={handleSaveService} onClose={handleCloseModal} />}
             </Dialog>
+
+            <ConfirmationDialog
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmPermanentDelete}
+                title="¿Eliminar Permanentemente?"
+                description={`Estás a punto de borrar "${serviceToDelete?.name}" para siempre. Esta acción no se puede deshacer.`}
+            />
 
             <div className="space-y-8">
                 <motion.div
@@ -266,25 +288,45 @@ const Productos = () => {
                             </div>
                         </div>
                     </div>
+                    
+                    <div className="flex items-center space-x-2 mb-6">
+                        <Switch id="show-inactive" checked={showInactive} onCheckedChange={setShowInactive} />
+                        <Label htmlFor="show-inactive">Mostrar inactivos</Label>
+                    </div>
 
-                    {filteredServices.length > 0 ? (
-                        <div className={cn("grid gap-6", viewMode === 'grid' ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}>
-                            <AnimatePresence>
-                                {filteredServices.map((service, index) => (
-                                    <ServiceCard
-                                        key={service.id}
-                                        service={service}
-                                        index={index}
-                                        onEdit={handleOpenModal}
-                                        onTogglePopular={togglePopular}
-                                        onDelete={handleDeleteService}
-                                    />
-                                ))}
-                            </AnimatePresence>
-                        </div>
-                    ) : (
-                        <EmptyState />
-                    )}
+                    <motion.div 
+                        layout 
+                        className={cn("grid gap-6", viewMode === 'grid' ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1")}
+                    >                      
+                            {filteredServices.length > 0 ? (
+                                filteredServices.map((service, index) => (
+                                    viewMode === 'grid' ? (
+                                        <ServiceCard
+                                            key={service.id}
+                                            service={service}
+                                            index={index}
+                                            onEdit={handleOpenModal}
+                                            onTogglePopular={togglePopular}
+                                            onDeactivate={handleDeactivateService}
+                                            onReactivate={handleReactivateService}
+                                            onDelete={handleDeleteService}
+                                        />
+                                    ) : (
+                                        <ServiceListRow
+                                            key={service.id}
+                                            service={service}
+                                            onEdit={handleOpenModal}
+                                            onTogglePopular={togglePopular}
+                                            onDeactivate={handleDeactivateService}
+                                            onReactivate={handleReactivateService}
+                                            onDelete={handleDeleteService}
+                                        />
+                                    )
+                                ))
+                            ) : (
+                                <EmptyState />
+                            )}
+                    </motion.div>
                 </motion.div>
             </div>
         </>

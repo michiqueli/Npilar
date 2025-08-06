@@ -9,6 +9,7 @@ import {
   Trash2,
   Tag,
   ImageOff,
+  RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-const ServiceCard = ({ service, index, onEdit, onTogglePopular, onDelete }) => {
+const ServiceCard = ({
+  service,
+  index,
+  onEdit,
+  onTogglePopular,
+  onDeactivate,
+  onReactivate,
+  onDelete,
+}) => {
   const getBadgeClass = (badge) => {
     switch (badge) {
       case "NUEVO":
@@ -36,18 +45,13 @@ const ServiceCard = ({ service, index, onEdit, onTogglePopular, onDelete }) => {
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.8, y: 50 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.8, y: -50 }}
-      transition={{
-        duration: 0.4,
-        delay: index * 0.05,
-        type: "spring",
-        stiffness: 260,
-        damping: 20,
-      }}
-      className="bg-card text-card-foreground rounded-2xl border shadow-sm transition-all duration-300 relative group flex flex-col overflow-hidden hover:shadow-primary/20 hover:border-primary/50"
+      layout="position"
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      // --- CORRECCIÓN: Se eliminó `transition-all duration-300` ---
+      className="bg-card text-card-foreground rounded-2xl border shadow-sm relative group flex flex-col overflow-hidden hover:shadow-primary/20 hover:border-primary/50"
     >
       <div className="relative">
         <div className="absolute top-3 right-3 z-10">
@@ -62,35 +66,53 @@ const ServiceCard = ({ service, index, onEdit, onTogglePopular, onDelete }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => onEdit(service)}
-                className="cursor-pointer"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Editar servicio
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onTogglePopular(service.id)}
-                className="cursor-pointer"
-              >
-                <Star
-                  className={cn(
-                    "w-4 h-4 mr-2",
-                    service.popular && "fill-yellow-400 text-yellow-500"
-                  )}
-                />
-                {service.popular
-                  ? "Quitar de populares"
-                  : "Marcar como popular"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => onDelete(service.id)}
-                className="cursor-pointer text-destructive focus:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Desactivar servicio
-              </DropdownMenuItem>
+              {service.active ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => onEdit(service)}
+                    className="cursor-pointer"
+                  >
+                    <Edit className="w-4 h-4 mr-2" /> Editar servicio
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => onTogglePopular(service.id)}
+                    className="cursor-pointer"
+                  >
+                    <Star
+                      className={cn(
+                        "w-4 h-4 mr-2",
+                        service.popular && "fill-yellow-400 text-yellow-500"
+                      )}
+                    />
+                    {service.popular
+                      ? "Quitar de populares"
+                      : "Marcar como popular"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDeactivate(service.id)}
+                    className="cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Desactivar servicio
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => onReactivate(service.id)}
+                    className="cursor-pointer"
+                  >
+                    <RotateCw className="w-4 h-4 mr-2" /> Reactivar servicio
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDelete(service)}
+                    className="cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Eliminar Permanentemente
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

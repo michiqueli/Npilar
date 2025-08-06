@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { isToday } from 'date-fns';
 
-const hours = Array.from({ length: 13 }, (_, i) => (i + 8).toString().padStart(2, '0')); // 08 to 20
+const allHours = Array.from({ length: 13 }, (_, i) => (i + 8).toString().padStart(2, '0'));
+const allMinutes = ['00', '15', '30', '45'];
 
-// --- CORRECCIÓN: Se cambia el array de minutos a intervalos de 15 ---
-const minutes = ['00', '15', '30', '45'];
-
-const TimePicker = ({ value, onChange }) => {
+const TimePicker = ({ value, onChange, selectedDate }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedHour, setSelectedHour] = useState('09');
     const [selectedMinute, setSelectedMinute] = useState('00');
@@ -18,13 +17,27 @@ const TimePicker = ({ value, onChange }) => {
     const hourRef = useRef(null);
     const minuteRef = useRef(null);
 
+    const availableHours = useMemo(() => {
+        if (!selectedDate || !isToday(selectedDate)) {
+            return allHours;
+        }
+        const currentHour = new Date().getHours();
+        return allHours.filter(hour => parseInt(hour) >= currentHour);
+    }, [selectedDate]);
+
+    const availableMinutes = useMemo(() => {
+        if (!selectedDate || !isToday(selectedDate) || parseInt(selectedHour) > new Date().getHours()) {
+            return allMinutes;
+        }
+        const currentMinute = new Date().getMinutes();
+        return allMinutes.filter(minute => parseInt(minute) >= currentMinute);
+    }, [selectedDate, selectedHour]);
+
     useEffect(() => {
         if (value) {
             const [h, m] = value.split(':');
             setSelectedHour(h);
-            // Ajustamos el minuto al intervalo de 15 más cercano
             const closestMinute = (Math.round(parseInt(m) / 15) * 15).toString().padStart(2, '0');
-            // Si el resultado es 60, lo ajustamos a 45
             setSelectedMinute(closestMinute === '60' ? '45' : closestMinute);
         }
     }, [value]);
@@ -55,7 +68,7 @@ const TimePicker = ({ value, onChange }) => {
             const itemHeight = e.target.firstChild.children[0].clientHeight;
             const centerIndex = Math.round((scrollTop + clientHeight / 2 - itemHeight * 2.5) / itemHeight);
             
-            const values = type === 'hour' ? hours : minutes;
+            const values = type === 'hour' ? availableHours : availableMinutes;
             const newValue = values[centerIndex];
 
             if (newValue) {
@@ -82,9 +95,7 @@ const TimePicker = ({ value, onChange }) => {
                             onClick={() => onSelect(val)}
                             className={cn(
                                 'w-16 h-10 flex items-center justify-center rounded-md cursor-pointer text-2xl font-semibold transition-all duration-200',
-                                selectedValue === val
-                                    ? 'text-primary'
-                                    : 'text-muted-foreground'
+                                selectedValue === val ? 'text-primary' : 'text-muted-foreground'
                             )}
                             style={{ scrollSnapAlign: 'center' }}
                             whileTap={{ scale: 0.95 }}
@@ -110,7 +121,7 @@ const TimePicker = ({ value, onChange }) => {
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] h-10 bg-primary/10 rounded-lg pointer-events-none border border-primary/20"></div>
                     <div className="flex space-x-2 relative z-10">
                         <TimeColumn
-                            values={hours}
+                            values={availableHours}
                             selectedValue={selectedHour}
                             colRef={hourRef}
                             title="Hora"
@@ -122,7 +133,7 @@ const TimePicker = ({ value, onChange }) => {
                         />
                         <div className="self-center text-3xl font-bold text-muted-foreground pb-8">:</div>
                         <TimeColumn
-                            values={minutes}
+                            values={availableMinutes}
                             selectedValue={selectedMinute}
                             colRef={minuteRef}
                             title="Min"

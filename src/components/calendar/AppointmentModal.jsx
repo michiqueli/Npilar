@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,11 +9,12 @@ import { User, UserPlus, Calendar as CalendarIcon, AlertTriangle, Clock } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, addMinutes, parse, parseISO } from 'date-fns';
+import { format, addMinutes, parse, parseISO, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
-import TimePicker from '@/components/calendar/TimePicker'; // Usaremos el nuevo TimePicker
+import TimePicker from '@/components/calendar/TimePicker';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, services, appointments }) => {
     const { toast } = useToast();
@@ -58,7 +59,6 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
 
             if (modalData && modalData.date && modalData.hourIndex !== undefined) {
                 setSelectedDate(modalData.date);
-                // MODIFICADO: Cálculo de tiempo para intervalos de 15
                 const initialTime = addMinutes(new Date(modalData.date).setHours(8, 0, 0, 0), modalData.hourIndex * 15);
                 setSelectedTime(format(initialTime, 'HH:mm'));
             } else {
@@ -102,13 +102,6 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                     });
 
                     setOverlapWarning(isOverlap);
-                    if(isOverlap) {
-                        toast({
-                            variant: "destructive",
-                            title: "Cuidado: Superposición de Cita",
-                            description: "El horario seleccionado se superpone con otra cita.",
-                        })
-                    }
                 } catch (error) {
                     setEndTime('');
                 }
@@ -116,11 +109,26 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
         } else {
             setEndTime('');
         }
-    }, [selectedServiceId, selectedTime, selectedDate, services, appointments, toast]);
+    }, [selectedServiceId, selectedTime, selectedDate, services, appointments]);
 
-    const handleSave = () => {
+    const handleSave = (e) => {
+        e.preventDefault();
+
+        const [hour, minute] = selectedTime.split(':');
+        const appointmentDateTime = new Date(selectedDate);
+        appointmentDateTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
+
+        if (appointmentDateTime < new Date()) {
+            toast({ variant: 'destructive', title: 'Fecha inválida', description: 'No se puede agendar una cita en el pasado.' });
+            return;
+        }
+
+        if (overlapWarning) {
+            toast({ variant: "destructive", title: "Acción no permitida", description: "No se puede guardar una cita que se superpone con otra." });
+            return;
+        }
+
         let clientDetails;
-
         if (tab === 'new') {
             if (!newClientName.trim()) {
                 toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, completa el nombre del nuevo cliente.' });
@@ -133,7 +141,6 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                 return;
             }
             const client = clients.find(c => c.id === selectedClientId);
-            
             if (!client) {
                 toast({ variant: 'destructive', title: 'Error', description: 'El cliente seleccionado no es válido.' });
                 return;
@@ -152,18 +159,12 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
             return;
         }
 
-        // MODIFICADO: Cálculo de hourIndex para intervalos de 15 minutos
-        const [hour, minute] = selectedTime.split(':');
         const hourIndex = (parseInt(hour) - 8) * 4 + Math.floor(parseInt(minute) / 15);
 
         onSave({
             date: selectedDate,
             hourIndex: hourIndex,
-            details: {
-                ...clientDetails,
-                serviceId: service.id,
-                notes: notes,
-            }
+            details: { ...clientDetails, serviceId: service.id, notes: notes }
         });
         handleClose();
     };
@@ -183,7 +184,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                         Completa los datos para agendar una nueva cita.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4 space-y-4 overflow-y-auto max-h-[70vh] pr-2">
+                <form id="appointment-form" onSubmit={handleSave} className="py-4 space-y-4 overflow-y-auto max-h-[70vh] pr-2">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                            <Label htmlFor="date">Fecha</Label>
@@ -201,7 +202,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                                        </Button>
                                    </PopoverTrigger>
                                    <PopoverContent className="w-auto p-0" align="start">
-                                       <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus aria-label="Calendario" />
+                                       <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} disabled={{ before: startOfDay(new Date()) }} initialFocus aria-label="Calendario" />
                                    </PopoverContent>
                                </Popover>
                            )}
@@ -214,18 +215,19 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                                     <span>{selectedTime}</span>
                                 </div>
                             ) : (
-                                <TimePicker value={selectedTime} onChange={setSelectedTime} />
+                                <TimePicker value={selectedTime} onChange={setSelectedTime} selectedDate={selectedDate} />
                             )}
                         </div>
                     </div>
+                    
                     {overlapWarning && (
-                         <div role="alert" className="flex items-center p-2 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
-                             <AlertTriangle className="flex-shrink-0 inline w-4 h-4 mr-3" />
-                             <span className="sr-only">Warning</span>
-                             <div>
-                                 <span className="font-medium">Alerta:</span> La cita se superpone con otra.
-                             </div>
-                         </div>
+                        <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Horario Ocupado</AlertTitle>
+                            <AlertDescription>
+                                El horario seleccionado se superpone con otra cita. Por favor, elige otra hora.
+                            </AlertDescription>
+                        </Alert>
                     )}
 
                     <Tabs value={tab} onValueChange={setTab} className="pt-2">
@@ -288,10 +290,12 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                         <Label htmlFor="notes">Notas (opcional)</Label>
                         <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Alergias, preferencias, etc." />
                     </div>
-                </div>
+                </form>
                 <DialogFooter className="pt-4">
                     <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
-                    <Button variant="primary" onClick={handleSave}>Guardar Cita</Button>
+                    <Button type="submit" form="appointment-form" variant="primary" disabled={overlapWarning}>
+                        Guardar Cita
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

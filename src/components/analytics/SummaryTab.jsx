@@ -77,15 +77,16 @@ const SummaryTab = ({ analyticsData, dateRange, selectedDays }) => {
         <div className="space-y-6">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
                 <AnalyticsCard 
-                    title="Ingresos de este Mes" 
+                    title="Ingresos del Mes" 
                     value={`$${(analyticsData.currentMonthTotalRevenue || 0).toLocaleString()}`} 
-                    isPositive={analyticsData.revenueChange >= 0} 
+                    change=""
+                    isPositive={true} 
                     icon={DollarSign} 
                     iconBgColor="bg-success" 
                 />
 
                 <AnalyticsCard 
-                    title="Ingresos Del Periodo Seleccionado"
+                    title="Ingresos del Periodo" 
                     value={`$${(analyticsData.periodTotalRevenue || 0).toLocaleString()}`} 
                     change={formatChange(analyticsData.revenueChange)} 
                     isPositive={analyticsData.revenueChange >= 0} 
@@ -151,7 +152,7 @@ const SummaryTab = ({ analyticsData, dateRange, selectedDays }) => {
                 </ResponsiveContainer>
             </div>
             
-            <OccupancyHeatmap data={[]} />
+            <OccupancyHeatmap data={analyticsData.occupancyData} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 premium-card p-4 sm:p-6">
@@ -162,6 +163,7 @@ const SummaryTab = ({ analyticsData, dateRange, selectedDays }) => {
                                 <AlertTitle>Fideliza a tus mejores clientes</AlertTitle>
                                 <AlertDescription className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                                     <p>Los clientes frecuentes son la base de tu negocio. ¡Prémialos!</p>
+                                    <Button size="sm" variant="secondary" onClick={() => toast({title: "Función activada!"})} className="w-full sm:w-auto">Crear Descuento</Button>
                                 </AlertDescription>
                             </Alert>
                             <Alert variant="warning">
@@ -169,6 +171,7 @@ const SummaryTab = ({ analyticsData, dateRange, selectedDays }) => {
                                 <AlertTitle>Optimiza tus horas valle</AlertTitle>
                                 <AlertDescription className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                                     <p>Lanza una promoción los martes y miércoles por la tarde.</p>
+                                    <Button size="sm" variant="secondary" onClick={() => toast({title: "Función activada!"})} className="w-full sm:w-auto">Crear Promoción</Button>
                                 </AlertDescription>
                             </Alert>
                        </div>

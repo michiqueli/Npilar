@@ -9,7 +9,6 @@ import {
   endOfWeek,
   eachDayOfInterval,
   addMonths,
-  subMonths,
   startOfMonth,
   endOfMonth,
   isToday,
@@ -526,32 +525,38 @@ const Calendario = () => {
   }, [currentDate, view, isMobile]);
 
   const getSlotStatus = (day, hourIndex) => {
-    const dateKey = format(day, "yyyy-MM-dd");
-    const dayOfWeek = day.getDay().toString();
-    const schedule = availability.exceptions[dateKey]
-      ? { available: false, ranges: [], breaks: [] }
-      : availability.default[dayOfWeek];
+        const slotDateTime = new Date(day);
+        const totalMinutes = 8 * 60 + hourIndex * 15;
+        slotDateTime.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
 
-    if (!schedule || !schedule.available) return "unavailable";
+        if (slotDateTime < new Date()) {
+            return 'past'; // El horario ya pasó
+        }
 
-    const slotTime = 8 * 60 + hourIndex * 15;
+        const dateKey = format(day, 'yyyy-MM-dd');
+        const dayOfWeek = day.getDay().toString();
+        const schedule = availability.exceptions[dateKey] ? { available: false, ranges: [], breaks: [] } : availability.default[dayOfWeek];
 
-    const isBreak = schedule.breaks.some((range) => {
-      const startTime = timeToMinutes(range.start);
-      const endTime = timeToMinutes(range.end);
-      return slotTime >= startTime && slotTime < endTime;
-    });
-    if (isBreak) return "break";
+        if (!schedule || !schedule.available) return 'unavailable';
 
-    const isAvailable = schedule.ranges.some((range) => {
-      const startTime = timeToMinutes(range.start);
-      const endTime = timeToMinutes(range.end);
-      return slotTime >= startTime && slotTime < endTime;
-    });
-    if (isAvailable) return "available";
+        const slotTime = 8 * 60 + hourIndex * 15;
+        
+        const isBreak = schedule.breaks.some(range => {
+            const startTime = timeToMinutes(range.start);
+            const endTime = timeToMinutes(range.end);
+            return slotTime >= startTime && slotTime < endTime;
+        });
+        if (isBreak) return 'break';
 
-    return "closed";
-  };
+        const isAvailable = schedule.ranges.some(range => {
+            const startTime = timeToMinutes(range.start);
+            const endTime = timeToMinutes(range.end);
+            return slotTime >= startTime && slotTime < endTime;
+        });
+        if (isAvailable) return 'available';
+
+        return 'closed';
+    };
 
   if (loading) {
     return (

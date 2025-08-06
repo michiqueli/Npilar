@@ -126,7 +126,7 @@ const Clientes = () => {
                     .insert({
                         name: formData.name,
                         phone: formData.phone,
-                        email: formData.email,
+                        email: formData.email || null,
                         notes: formData.notes,
                         // preferred_service_id: formData.preferredServiceId
                     })
@@ -168,7 +168,7 @@ const Clientes = () => {
         setFormData({
             name: client.name,
             phone: client.phone,
-            email: client.email || '',
+            email: client.email || null,
             notes: client.notes || '',
             preferred_service_id: client.preferred_service_id || null
         });
@@ -266,7 +266,7 @@ const Clientes = () => {
                     </div>
                     
                     <div className="flex items-center gap-2 w-full md:w-auto">
-                        <DropdownMenu>
+                        {/*<DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="secondary" className="hidden md:flex">
                                     <Download className="w-4 h-4 mr-2" />
@@ -281,12 +281,12 @@ const Clientes = () => {
                                     Importar desde CSV
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                {/*<DropdownMenuItem onClick={() => handleFeatureNotImplemented('Exportar CSV')}>
+                                <DropdownMenuItem onClick={() => handleFeatureNotImplemented('Exportar CSV')}>
                                     Exportar a CSV
-                                </DropdownMenuItem>*/}
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
-                        </DropdownMenu>
-
+                        </DropdownMenu>*/}
+                        
                         <Button onClick={openNewClientModal} variant="primary" className="w-full md:w-auto" size="lg">
                             <UserPlus className="w-4 h-4 mr-2" />
                             Nuevo Cliente
