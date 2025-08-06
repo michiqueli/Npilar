@@ -2,12 +2,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
 
 const Header = ({ toggleSidebar, isMobile }) => {
-    const { toast } = useToast();
 
     return (
         <motion.header

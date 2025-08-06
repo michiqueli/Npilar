@@ -27,7 +27,7 @@ const ClientListRow = ({ client, onViewProfile, onEdit, onScheduleAppointment, o
     }
   };
 
-  const avatar = getClientAvatar(client.name);
+  const avatar = getClientAvatar(client?.name);
 
   return (
     <motion.div
@@ -41,16 +41,16 @@ const ClientListRow = ({ client, onViewProfile, onEdit, onScheduleAppointment, o
         {avatar.initials}
       </div>
       <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-        <div className="font-bold text-foreground group-hover:text-primary transition-colors">{client.name}</div>
+        <div className="font-bold text-foreground group-hover:text-primary transition-colors">{client?.name}</div>
         
         <div className="text-muted-foreground text-sm flex items-center gap-2">
             <Phone className="w-4 h-4 text-primary/70" />
-            {client.phone}
+            {client?.phone}
         </div>
 
         <div className="text-muted-foreground text-sm hidden md:flex items-center gap-2">
             <Mail className="w-4 h-4 text-primary/70" />
-            {client.email || 'No disponible'}
+            {client?.email || 'No disponible'}
         </div>
 
         <div className="text-muted-foreground text-sm hidden md:flex items-center gap-2">

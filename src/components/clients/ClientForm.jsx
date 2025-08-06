@@ -48,7 +48,7 @@ const ClientForm = ({
                     <Label htmlFor="phone">Teléfono *</Label>
                     <Input
                       id="phone"
-                      value={formData.phone}
+                      value={formData.phone|| null}
                       onChange={(e) => onInputChange('phone', e.target.value)}
                       placeholder="+54 9 11 1234-5678"
                       required

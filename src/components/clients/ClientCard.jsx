@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 
 const ClientCard = ({ client, index, onViewProfile, onEdit, onScheduleAppointment, onDelete, viewMode }) => {
   const getClientAvatar = (name) => {
-    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const colors = [
       'bg-primary',
       'bg-blue-500',
@@ -65,7 +65,7 @@ const ClientCard = ({ client, index, onViewProfile, onEdit, onScheduleAppointmen
     }
   };
 
-  const avatar = getClientAvatar(client.name);
+  const avatar = getClientAvatar(client?.name);
   const clientType = getClientType(client);
   const typeStyles = getClientTypeStyles(clientType);
   
@@ -86,8 +86,8 @@ const ClientCard = ({ client, index, onViewProfile, onEdit, onScheduleAppointmen
                 {avatar.initials}
             </div>
             <div className="flex-1 overflow-hidden">
-                <h3 className="font-bold text-foreground truncate">{client.name}</h3>
-                <p className="text-muted-foreground text-sm truncate">{client.phone}</p>
+                <h3 className="font-bold text-foreground truncate">{client?.name}</h3>
+                <p className="text-muted-foreground text-sm truncate">{client?.phone}</p>
                  <p className="text-muted-foreground text-xs truncate">{getLastVisitText(client.lastVisit)}</p>
             </div>
             <Button size="lg" variant="primary" className="h-12 w-auto" onClick={(e) => { e.stopPropagation(); onScheduleAppointment(client); }}>
@@ -130,7 +130,7 @@ const ClientCard = ({ client, index, onViewProfile, onEdit, onScheduleAppointmen
               "font-bold text-foreground group-hover:text-primary transition-colors",
               isCompact ? 'text-base' : 'text-lg'
             )}>
-              {client.name}
+              {client?.name}
             </h3>
           </div>
         </div>
@@ -166,7 +166,7 @@ const ClientCard = ({ client, index, onViewProfile, onEdit, onScheduleAppointmen
           <div className="space-y-3 mb-4 text-sm">
             <div className="flex items-center text-muted-foreground">
               <Phone className="w-4 h-4 mr-3 text-primary" />
-              <span>{client.phone}</span>
+              <span>{client?.phone}</span>
             </div>
             
             {client.email && (

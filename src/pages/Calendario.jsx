@@ -266,7 +266,7 @@ const Calendario = () => {
       setPreselectedClient(clientFromNav);
       toast({
         title: "Cliente Seleccionado",
-        description: `Haz clic en un horario disponible para agendar una cita para ${clientFromNav.name}.`,
+        description: `Haz clic en un horario disponible para agendar una cita para ${clientFromNav?.name}.`,
       });
       navigate(".", { replace: true, state: {} });
     }
@@ -300,14 +300,14 @@ const Calendario = () => {
       if (data.details.isNew) {
         const { data: newClient, error: clientError } = await supabase
           .from("clients")
-          .insert({ name: data.details.name, phone: data.details.phone })
+          .insert({ name: data?.details?.name, phone: data?.details?.phone })
           .select()
           .single();
 
         if (clientError) throw clientError;
 
-        clientId = newClient.id;
-        clientName = newClient.name;
+        clientId = newClient?.id;
+        clientName = newClient?.name;
         setClients((prevClients) => [...prevClients, newClient]);
       }
 
@@ -677,7 +677,7 @@ const Calendario = () => {
           >
             <p className="text-sm font-medium">
               Agendando cita para:{" "}
-              <span className="font-bold">{preselectedClient.name}</span>
+              <span className="font-bold">{preselectedClient.name ?? "Cliente sin nombre"}</span>
             </p>
             <Button
               variant="ghost"
@@ -874,10 +874,10 @@ const Calendario = () => {
                           {/* Contenedor del texto que se oculta al hacer hover */}
                           <div className="flex-grow transition-opacity duration-300 group-hover:opacity-0 text-center">
                             <p className="font-bold text-primary text-md truncate">
-                              {appointment.clients.name}
+                              {appointment.clients?.name}
                             </p>
                             <p className="text-primary/80 text-md truncate">
-                              {appointment.services.name}
+                              {appointment?.services?.name}
                             </p>
                           </div>
 

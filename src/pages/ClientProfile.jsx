@@ -72,15 +72,15 @@ const ClientProfile = () => {
     // --- Funciones para los botones de acción ---
 
     const handleCall = () => {
-        if (client && client.phone) {
-            window.location.href = `tel:${client.phone}`;
+        if (client && client?.phone) {
+            window.location.href = `tel:${client?.phone}`;
         }
     };
 
     const handleWhatsApp = () => {
-        if (client && client.phone) {
+        if (client && client?.phone) {
             // Limpiamos el número de teléfono de caracteres no numéricos
-            const cleanPhoneNumber = client.phone.replace(/[^0-9]/g, '');
+            const cleanPhoneNumber = client?.phone?.replace(/[^0-9]/g, '');
             window.open(`https://wa.me/${cleanPhoneNumber}`, '_blank');
         }
     };
@@ -88,11 +88,11 @@ const ClientProfile = () => {
     const handleEdit = () => {
         if (client) {
             setFormData({
-                name: client.name,
-                phone: client.phone,
-                email: client.email || '',
-                notes: client.notes || '',
-                preferred_service_id: client.preferred_service_id || null
+                name: client?.name,
+                phone: client?.phone,
+                email: client?.email || '',
+                notes: client?.notes || '',
+                preferred_service_id: client?.preferred_service_id || null
             });
             setIsModalOpen(true);
         }
@@ -179,7 +179,7 @@ const ClientProfile = () => {
         );
     }
 
-    const avatar = getClientAvatar(client.name);
+    const avatar = getClientAvatar(client?.name);
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -197,8 +197,8 @@ const ClientProfile = () => {
     return (
         <>
             <Helmet>
-                <title>{client.name} - Perfil de Cliente</title>
-                <meta name="description" content={`Perfil detallado de ${client.name}, incluyendo historial de servicios y preferencias.`} />
+                <title>{client?.name} - Perfil de Cliente</title>
+                <meta name="description" content={`Perfil detallado de ${client?.name}, incluyendo historial de servicios y preferencias.`} />
             </Helmet>
 
             <motion.div 
@@ -220,7 +220,7 @@ const ClientProfile = () => {
                             {avatar.initials}
                         </div>
                         <div className="flex-grow">
-                            <h1 className="text-3xl font-bold text-foreground">{client.name}</h1>
+                            <h1 className="text-3xl font-bold text-foreground">{client?.name}</h1>
                             <p className="text-muted-foreground mt-1">Cliente desde {format(parseISO(client.created_at), 'MMMM yyyy', { locale: es })}</p>
                             <div className="mt-4 flex flex-wrap gap-2">
                                 <Button onClick={handleCall} variant="outline" size="sm"><Phone className="w-4 h-4 mr-2" />Llamar</Button>
@@ -264,7 +264,7 @@ const ClientProfile = () => {
                         <div className="premium-card p-6">
                             <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2"><Info className="w-5 h-5 text-primary"/> Información General</h2>
                             <div className="space-y-3 text-sm">
-                                <div className="flex items-center gap-3"><Phone className="w-4 h-4 text-muted-foreground"/> <span className="text-foreground">{client.phone}</span></div>
+                                <div className="flex items-center gap-3"><Phone className="w-4 h-4 text-muted-foreground"/> <span className="text-foreground">{client?.phone}</span></div>
                                 {client.email && <div className="flex items-center gap-3"><Mail className="w-4 h-4 text-muted-foreground"/> <span className="text-foreground">{client.email}</span></div>}
                             </div>
                         </div>

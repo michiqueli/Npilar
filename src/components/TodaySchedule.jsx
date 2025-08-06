@@ -112,9 +112,9 @@ const TodaySchedule = () => {
 
     // --- NUEVO: Lógica para enviar recordatorio por WhatsApp ---
     const handleSendReminder = async (appointment) => {
-        if (appointment.clients && appointment.clients.phone) {
-            const cleanPhoneNumber = appointment.clients.phone.replace(/[^0-9]/g, '');
-            const message = encodeURIComponent(`¡Hola ${appointment.clients.name}! Te recordamos tu turno para un servicio de "${appointment.services.name}" hoy a las ${format(parseISO(appointment.appointment_at), 'HH:mm')}hs. ¡Te esperamos en Skin Hair Studio PILAR!`);
+        if (appointment.clients && appointment.clients?.phone) {
+            const cleanPhoneNumber = appointment.clients?.phone.replace(/[^0-9]/g, '');
+            const message = encodeURIComponent(`¡Hola ${appointment?.clients?.name}! Te recordamos tu turno para un servicio de "${appointment?.services?.name}" hoy a las ${format(parseISO(appointment.appointment_at), 'HH:mm')}hs. ¡Te esperamos en Skin Hair Studio PILAR!`);
             window.open(`https://wa.me/${cleanPhoneNumber}?text=${message}`, '_blank');
 
             // Actualizamos la base de datos para marcar el recordatorio como enviado
@@ -174,10 +174,10 @@ const TodaySchedule = () => {
 
             if (data.details.isNew) {
                 const { data: newClient, error: clientError } = await supabase
-                    .from('clients').insert({ name: data.details.name, phone: data.details.phone }).select().single();
+                    .from('clients').insert({ name: data?.details?.name, phone: data?.details?.phone }).select().single();
                 if (clientError) throw clientError;
                 clientId = newClient.id;
-                clientName = newClient.name;
+                clientName = newClient?.name;
                 setClients(prev => [...prev, newClient]);
             }
             
@@ -210,7 +210,7 @@ const TodaySchedule = () => {
             setIsModalOpen(false);
             toast({
                 title: "✅ Cita Guardada",
-                description: `Se ha agendado a ${clientName} para el servicio ${selectedService.name}.`,
+                description: `Se ha agendado a ${clientName} para el servicio ${selectedService?.name}.`,
                 className: 'bg-success text-white'
             });
         } catch (error) {

@@ -14,8 +14,7 @@ const Sidebar = ({
 }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout, webAuthnRegister } = useAuth(); // 2. Obtenemos los datos y funciones del usuario
-
+    const { user, logout, webAuthnRegister } = useAuth();
     const menuItems = [{
         icon: LayoutDashboard,
         label: 'Panel del Día',
@@ -56,6 +55,10 @@ const Sidebar = ({
         open: { opacity: 1, x: 0, transition: { delay: 0.1, duration: 0.2 } },
         closed: { opacity: 0, x: -20, transition: { duration: 0.2 } }
     };
+
+    const displayName = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.user_metadata?.username || "Usuario Anónimo";
+    const displayInitial = displayName?.charAt(0).toUpperCase() || "U";
+    const displayEmail = user?.email || "No email provided";
     
     if (!isOpen && !isMobile) {
         return null;
@@ -127,12 +130,12 @@ const Sidebar = ({
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
                                     <span className="text-sm font-bold text-primary-foreground">
-                                        {user?.user_metadata.name?.charAt(0) || "N"}
+                                        {displayInitial}
                                     </span>
                                 </div>
                                 <div className="overflow-hidden">
-                                    <p className="font-bold text-sm truncate">{user?.user_metadata.name}</p>
-                                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                                    <p className="font-bold text-sm truncate">{displayName}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{displayEmail}</p>
                                 </div>
                             </div>
                             <div className="space-y-2">
