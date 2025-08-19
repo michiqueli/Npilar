@@ -5,7 +5,8 @@ import { LayoutDashboard, CalendarDays, Users, BarChart3, Scissors, LogOut, Fing
 import KScissorsIcon from '@/components/KScissorsIcon';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext'; // 1. Importamos el hook de autenticación
+import { useAuth } from '@/contexts/AuthContext';
+import config from '@/config';
 
 const Sidebar = ({
     isOpen,
@@ -45,7 +46,7 @@ const Sidebar = ({
     };
 
     const sidebarVariants = {
-        open: { width: 250, transition: { type: 'spring', stiffness: 300, damping: 30 } },
+        open: { width: 270, transition: { type: 'spring', stiffness: 300, damping: 30 } },
         closed: { width: 0, padding: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
         mobileOpen: { x: 0, width: 250, transition: { type: 'spring', stiffness: 500, damping: 40, duration: 0.3, ease: 'easeOut' } },
         mobileClosed: { x: '-100%', width: 250, transition: { type: 'spring', stiffness: 500, damping: 40, duration: 0.3, ease: 'easeIn' } }
@@ -79,7 +80,7 @@ const Sidebar = ({
                     <AnimatePresence>
                         {isOpen && (
                             <motion.div variants={contentVariants} initial="closed" animate="open" exit="closed" className="overflow-hidden">
-                                <h1 className="text-xl font-semibold text-foreground tracking-tight whitespace-nowrap">Skin Hair Studio</h1>
+                                <h1 className="text-xl font-semibold text-foreground tracking-tight whitespace-nowrap">{config.appName}</h1>
                                 <p className="text-xs text-muted-foreground font-medium whitespace-nowrap">PILAR</p>
                             </motion.div>
                         )}

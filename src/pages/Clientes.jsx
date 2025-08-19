@@ -9,15 +9,9 @@ import ClientFilters from '@/components/clients/ClientFilters';
 import ClientForm from '@/components/clients/ClientForm';
 import EmptyState from '@/components/clients/EmptyState';
 import { useNavigate } from 'react-router-dom';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu"
 import ClientListRow from '@/components/clients/ClientListRow';
 import { supabase } from '@/lib/supabaseClient'; 
+import config from '@/config';
 
 const Clientes = () => {
     const { toast } = useToast();
@@ -249,7 +243,7 @@ const Clientes = () => {
     return (
         <>
             <Helmet>
-                <title>Mis Clientes - N - Pilar</title>
+                <title>{`Mis Clientes - ${config.appName}`}</title>
                 <meta name="description" content="Gestiona tu base de clientes, su historial de visitas, preferencias y más." />
             </Helmet>
 

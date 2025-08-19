@@ -27,7 +27,6 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
     const [maxAmount, setMaxAmount] = useState('');
     const [incomeServices, setIncomeServices] = useState([]);
 
-    // --- NUEVO: Cargar servicios desde Supabase ---
     useEffect(() => {
         const fetchServices = async () => {
             try {
@@ -110,11 +109,11 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
                                 {dateRange?.from ? (
                                     dateRange.to ? (
                                         <>
-                                            {format(dateRange.from, "LLL dd, y", { locale: es })} -{" "}
-                                            {format(dateRange.to, "LLL dd, y", { locale: es })}
+                                            {format(dateRange.from, "dd,MM,yy", { locale: es })} -{" "}
+                                            {format(dateRange.to, "dd,MM,yy", { locale: es })}
                                         </>
                                     ) : (
-                                        format(dateRange.from, "LLL dd, y", { locale: es })
+                                        format(dateRange.from, "dd,MM,yy", { locale: es })
                                     )
                                 ) : (
                                     <span>Elige un rango</span>

@@ -7,6 +7,7 @@ import TodaySchedule from '@/components/TodaySchedule';
 import FloatingExpenseButton from '@/components/FloatingExpenseButton';
 import ClientCarousel from '@/components/ClientCarousel';
 import DailyStatusLine from '@/components/DailyStatusLine';
+import config from '@/config';
 
 const Dashboard = () => {
   const containerVariants = {
@@ -34,7 +35,7 @@ const Dashboard = () => {
   return (
     <>
       <Helmet>
-        <title>Panel del Día - Skin Hair Studio PILAR</title>
+        <title>{`Panel del Día - ${config.appName}`}</title>
         <meta name="description" content="Panel principal de control para gestión diaria de tu negocio." />
       </Helmet>
       

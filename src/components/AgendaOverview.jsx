@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Calendar, AlertCircle, Sparkles } from 'lucide-react';
+import { Users, Calendar, AlertCircle, Sparkles, DollarSign, Repeat, Scissors } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { startOfDay, endOfDay, getDay } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient'; // Usamos la ruta correcta
@@ -9,7 +9,7 @@ const AgendaOverview = () => {
     const { toast } = useToast();
     const [agendaData, setAgendaData] = useState({
         totalAppointments: 0,
-        freeHours: 0,
+        freeTime: '0h 0m', // <-- Cambiado a string
         cancelledToday: 0,
         newClients: 0,
     });
@@ -40,17 +40,15 @@ const AgendaOverview = () => {
                 const todaysAppointments = appointmentsRes.data || [];
                 const todaysSchedules = workSchedulesRes.data || [];
 
-                // Calcular estadísticas
                 const totalAppointments = todaysAppointments.filter(a => a.status !== 'CANCELLED').length;
                 const cancelledToday = todaysAppointments.filter(a => a.status === 'CANCELLED').length;
-                
-                // Un cliente es "nuevo" si tiene una cita hoy y su contador de visitas totales es 1 o menos.
                 const newClients = todaysAppointments
                     .filter(a => a.status !== 'CANCELLED' && a.clients && a.clients.total_visits <= 1)
                     .length;
 
-                // Calcular horas libres
+                // --- CORRECCIÓN: Lógica para formatear el tiempo libre ---
                 const timeToMinutes = (time) => {
+                    if (!time) return 0;
                     const [hours, minutes] = time.split(':').map(Number);
                     return hours * 60 + minutes;
                 };
@@ -63,19 +61,21 @@ const AgendaOverview = () => {
                     .filter(a => a.status !== 'CANCELLED')
                     .reduce((sum, a) => sum + a.duration_at_time_minutes, 0);
 
-                const freeMinutes = totalWorkMinutes - bookedMinutes;
-                const freeHours = Math.max(0, freeMinutes / 60); // Aseguramos que no sea negativo
+                const freeMinutes = Math.max(0, totalWorkMinutes - bookedMinutes);
+                
+                const hours = Math.floor(freeMinutes / 60);
+                const minutes = freeMinutes % 60;
+                const formattedFreeTime = `${hours}h ${minutes}m`;
 
                 setAgendaData({
                     totalAppointments,
-                    freeHours: parseFloat(freeHours.toFixed(1)), // Redondeamos a un decimal
+                    freeTime: formattedFreeTime, // <-- Se guarda el string formateado
                     cancelledToday,
                     newClients,
                 });
 
             } catch (error) {
                 console.error("Error fetching agenda overview:", error);
-                // No mostramos toast para no saturar el dashboard
             } finally {
                 setLoading(false);
             }
@@ -93,9 +93,9 @@ const AgendaOverview = () => {
             color: 'primary'
         },
         {
-            title: 'Horas Libres',
-            value: `${agendaData.freeHours} hs`,
-            subtitle: 'disponibles hoy',
+            title: 'Huecos Libres',
+            value: agendaData.freeTime, // <-- Se usa el string formateado
+            subtitle: 'espacios disponibles',
             icon: Users,
             color: 'success'
         },
@@ -109,7 +109,7 @@ const AgendaOverview = () => {
         {
             title: 'Clientes Nuevos',
             value: agendaData.newClients,
-            subtitle: 'primera visita hoy',
+            subtitle: 'primera visita',
             icon: Sparkles,
             color: 'secondary'
         }
@@ -124,7 +124,7 @@ const AgendaOverview = () => {
             primary: 'text-primary',
             secondary: 'text-secondary-foreground',
             success: 'text-success',
-            error: 'text-destructive' // Usamos destructive para un rojo más consistente
+            error: 'text-destructive'
         };
         return colors[color] || 'text-primary';
     };

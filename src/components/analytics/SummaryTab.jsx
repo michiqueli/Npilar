@@ -163,15 +163,13 @@ const SummaryTab = ({ analyticsData, dateRange, selectedDays }) => {
                                 <AlertTitle>Fideliza a tus mejores clientes</AlertTitle>
                                 <AlertDescription className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                                     <p>Los clientes frecuentes son la base de tu negocio. ¡Prémialos!</p>
-                                    <Button size="sm" variant="secondary" onClick={() => toast({title: "Función activada!"})} className="w-full sm:w-auto">Crear Descuento</Button>
                                 </AlertDescription>
                             </Alert>
                             <Alert variant="warning">
                                 <AlertTriangle className="h-4 w-4" />
                                 <AlertTitle>Optimiza tus horas valle</AlertTitle>
                                 <AlertDescription className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                    <p>Lanza una promoción los martes y miércoles por la tarde.</p>
-                                    <Button size="sm" variant="secondary" onClick={() => toast({title: "Función activada!"})} className="w-full sm:w-auto">Crear Promoción</Button>
+                                    <p>Lanza una promoción los Dias de menos ocupacion.</p>
                                 </AlertDescription>
                             </Alert>
                        </div>

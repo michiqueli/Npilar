@@ -17,10 +17,10 @@ const hours = Array.from(
 const getHeatColor = (value) => {
   if (value === null || value === undefined || value === 0)
     return "bg-muted/30 hover:bg-muted/50";
-  if (value <= 0.25) return "bg-green-300/50 hover:bg-green-300/80";
-  if (value <= 0.5) return "bg-green-500/60 hover:bg-green-500/90";
-  if (value <= 0.75) return "bg-yellow-400/60 hover:bg-yellow-400/90";
-  return "bg-red-500/60 hover:bg-red-500/90";
+  if (value <= 0.25) return "bg-red-500/60 hover:bg-red-500/90";
+  if (value <= 0.5) return "bg-yellow-400/60 hover:bg-yellow-400/90";
+  if (value <= 0.75) return "bg-green-500/60 hover:bg-green-500/90";
+  return "bg-green-300/50 hover:bg-green-300/80";
 };
 
 const OccupancyHeatmap = ({ data }) => {
@@ -32,14 +32,14 @@ const OccupancyHeatmap = ({ data }) => {
     <div className="premium-card p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
         <h3 className="text-xl font-bold mb-2 sm:mb-0">
-          Mapa de Calor de Ocupación
+          Mapa de Ocupación
         </h3>
         <div className="flex items-center space-x-2 text-xs text-muted-foreground">
           <span>Baja</span>
+          <div className="w-3 h-3 rounded-sm bg-red-500/60"></div>
+          <div className="w-3 h-3 rounded-sm bg-yellow-400/60"></div>
           <div className="w-3 h-3 rounded-sm bg-green-300/50"></div>
           <div className="w-3 h-3 rounded-sm bg-green-500/60"></div>
-          <div className="w-3 h-3 rounded-sm bg-yellow-400/60"></div>
-          <div className="w-3 h-3 rounded-sm bg-red-500/60"></div>
           <span>Alta</span>
         </div>
       </div>

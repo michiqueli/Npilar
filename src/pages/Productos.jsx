@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabaseClient';
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog';
+import config from '@/config';
 
 const Productos = () => {
     const { toast } = useToast();
@@ -205,7 +206,7 @@ const Productos = () => {
     return (
         <>
             <Helmet>
-                <title>Servicios - N - Pilar</title>
+                <title>{`Servicios - ${config.appName}`}</title>
                 <meta name="description" content="Catálogo completo de servicios y precios de la barbería" />
             </Helmet>
             

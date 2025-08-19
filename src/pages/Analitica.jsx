@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
 import { startOfMonth, endOfMonth, parseISO, format, subMonths, differenceInDays, subDays, eachDayOfInterval, getDay, startOfDay } from 'date-fns';
@@ -16,12 +16,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import DayFilterDropdown from '@/components/analytics/DayFilterDropdown';
 import PeriodPicker from '@/components/analytics/PeriodPicker';
-import { cn } from '@/lib/utils';
 import SummaryTab from '@/components/analytics/SummaryTab';
 import ServicesTab from '@/components/analytics/ServicesTab';
 import HistoricTab from '@/components/analytics/HistoricTab';
 import FinancialDashboard from '@/pages/FinancialDashboard';
 import { supabase } from '@/lib/supabaseClient';
+import config from '@/config';
 
 dayjs.locale('es');
 
@@ -257,7 +257,7 @@ const Analitica = () => {
     return (
         <>
             <Helmet>
-                <title>Análisis del Negocio - Skin Hair Studio</title>
+                <title>{`Analisis - ${config.appName}`}</title>
                 <meta name="description" content="Análisis financiero y estadísticas de rendimiento de tu negocio." />
             </Helmet>
             
@@ -275,7 +275,6 @@ const Analitica = () => {
                     <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
                         <DayFilterDropdown selectedDays={selectedDays} setSelectedDays={setSelectedDays} />
                         <PeriodPicker dateRange={dateRange} setDateRange={setDateRange} />
-                        <Button variant="primary" disabled className="hidden sm:flex"><Download className="w-4 h-4 mr-2" /> Exportar</Button>
                     </div>
                 </motion.div>
                 

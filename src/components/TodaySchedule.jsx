@@ -103,7 +103,7 @@ const TodaySchedule = () => {
                         isFreeSlot: true,
                     });
                 }
-                currentTime += 30;
+                currentTime += 15;
             }
         });
 
