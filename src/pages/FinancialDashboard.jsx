@@ -95,7 +95,7 @@ const FinancialDashboard = () => {
             return true;
         });
     }, [allTransactions, filters]);
-    
+
     const financialSummary = useMemo(() => {
         const transactionsToSummarize = filters ? filteredTransactions : allTransactions;
         const income = transactionsToSummarize.filter((t) => t.type === "income" && t.confirmed);
@@ -217,7 +217,7 @@ const FinancialDashboard = () => {
         setEditingTransaction(null);
         setIncomeModalOpen(true);
     };
-    
+
     const openExpenseModal = () => {
         setEditingTransaction(null);
         setExpenseModalOpen(true);
@@ -232,16 +232,19 @@ const FinancialDashboard = () => {
             <div className="space-y-6 pb-24 md:pb-0">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-6">
                     <FinancialIndicators financialSummary={financialSummary} />
-                    <div className="hidden md:block">
-                        <FinancialActions onOpenIncomeModal={openIncomeModal} onOpenExpenseModal={openExpenseModal} />
-                    </div>
+                </div>
+                <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <FinancialActions
+                        onOpenIncomeModal={openIncomeModal}
+                        onOpenExpenseModal={openExpenseModal}
+                    />
                 </div>
 
                 <FilterBar onApplyFilters={setFilters} onClearFilters={() => setFilters(null)} />
 
                 {filteredTransactions.length > 0 ? (
-                    <TransactionTable 
-                        transactions={filteredTransactions} 
+                    <TransactionTable
+                        transactions={filteredTransactions}
                         onEdit={handleEditTransaction}
                         onDuplicate={handleDuplicateTransaction}
                         onDelete={handleDeleteTransaction}
@@ -270,8 +273,8 @@ const FinancialDashboard = () => {
                 clients={clients}
                 services={services}
             />
-            
-            <Dialog open={isExpenseModalOpen} onOpenChange={(isOpen) => { if(!isOpen) setEditingTransaction(null); setExpenseModalOpen(isOpen); }}>
+
+            <Dialog open={isExpenseModalOpen} onOpenChange={(isOpen) => { if (!isOpen) setEditingTransaction(null); setExpenseModalOpen(isOpen); }}>
                 <ExpenseForm
                     onSave={handleSaveTransaction}
                     onClose={() => { setExpenseModalOpen(false); setEditingTransaction(null); }}
