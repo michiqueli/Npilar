@@ -126,7 +126,7 @@ const Calendario = () => {
 
                 if (appointmentsRes.error) throw appointmentsRes.error;
                 if (clientsRes.error) throw clientsRes.error;
-                if (servicesRes.error) throw servicesRes.error;
+                if (servicesRes?.error) throw servicesRes.error;
                 if (schedulesRes.error) throw schedulesRes.error;
                 if (exceptionsRes.error) throw exceptionsRes.error;
 
@@ -232,7 +232,7 @@ const Calendario = () => {
         setClients((prevClients) => [...prevClients, newClient]);
       }
 
-      const selectedService = services.find(
+      const selectedService = services?.find(
         (s) => s.id === data.details.serviceId
       );
       if (!selectedService) throw new Error("Servicio no encontrado");
