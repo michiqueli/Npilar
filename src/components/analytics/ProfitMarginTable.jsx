@@ -31,8 +31,8 @@ const ProfitMarginTable = ({ data }) => {
         </TableHeader>
         <TableBody>
           {data?.map((service) => (
-            <TableRow key={service.name}>
-              <TableCell className="font-medium">{service.name}</TableCell>
+            <TableRow key={service?.name}>
+              <TableCell className="font-medium">{service?.name}</TableCell>
               <TableCell>${service.revenue.toLocaleString()}</TableCell>
               <TableCell>${service.costs.toLocaleString()}</TableCell>
               <TableCell className="text-right">

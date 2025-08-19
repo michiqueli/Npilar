@@ -184,17 +184,17 @@ const Calendario = () => {
         fetchAllData();
     }, [currentDate, toast]);
 
-    useEffect(() => {
-        const clientFromNav = location.state?.newAppointmentClient;
-        if (clientFromNav) {
-            setPreselectedClient(clientFromNav);
-            toast({
-                title: "Cliente Seleccionado",
-                description: `Haz clic en un horario disponible para agendar una cita para ${clientFromNav.name}.`,
-            });
-            navigate('.', { replace: true, state: {} });
-        }
-    }, [location.state, navigate, toast]);
+  useEffect(() => {
+    const clientFromNav = location.state?.newAppointmentClient;
+    if (clientFromNav) {
+      setPreselectedClient(clientFromNav);
+      toast({
+        title: "Cliente Seleccionado",
+        description: `Haz clic en un horario disponible para agendar una cita para ${clientFromNav?.name}.`,
+      });
+      navigate(".", { replace: true, state: {} });
+    }
+  }, [location.state, navigate, toast]);
 
     const weekDays = useMemo(() => {
         const start = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -218,22 +218,24 @@ const Calendario = () => {
             let clientId = data.details.clientId;
             let clientName = data.details.clientName;
 
-            if (data.details.isNew) {
-                const { data: newClient, error: clientError } = await supabase
-                    .from('clients')
-                    .insert({ name: data.details.name, phone: data.details.phone })
-                    .select()
-                    .single();
-                
-                if (clientError) throw clientError;
-                
-                clientId = newClient.id;
-                clientName = newClient.name;
-                setClients(prevClients => [...prevClients, newClient]);
-            }
-            
-            const selectedService = services.find(s => s.id === data.details.serviceId);
-            if (!selectedService) throw new Error("Servicio no encontrado");
+      if (data.details.isNew) {
+        const { data: newClient, error: clientError } = await supabase
+          .from("clients")
+          .insert({ name: data?.details?.name, phone: data?.details?.phone })
+          .select()
+          .single();
+
+        if (clientError) throw clientError;
+
+        clientId = newClient?.id;
+        clientName = newClient?.name;
+        setClients((prevClients) => [...prevClients, newClient]);
+      }
+
+      const selectedService = services.find(
+        (s) => s.id === data.details.serviceId
+      );
+      if (!selectedService) throw new Error("Servicio no encontrado");
 
             const appointmentDateTime = new Date(data.date);
             const totalMinutes = 8 * 60 + data.hourIndex * 15;
@@ -510,20 +512,26 @@ const Calendario = () => {
                     </div>
                 </div>
 
-                {preselectedClient && (
-                    <motion.div
-                        className="bg-primary/10 border border-primary/20 text-primary p-3 rounded-lg flex items-center justify-between"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
-                        <p className="text-sm font-medium">
-                            Agendando cita para: <span className="font-bold">{preselectedClient.name}</span>
-                        </p>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreselectedClient(null)}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </motion.div>
-                )}
+        {preselectedClient && (
+          <motion.div
+            className="bg-primary/10 border border-primary/20 text-primary p-3 rounded-lg flex items-center justify-between"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <p className="text-sm font-medium">
+              Agendando cita para:{" "}
+              <span className="font-bold">{preselectedClient.name ?? "Cliente sin nombre"}</span>
+            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setPreselectedClient(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </motion.div>
+        )}
 
                 <AnimatePresence mode="wait">
                     <motion.div

@@ -166,11 +166,11 @@ const Clientes = () => {
     const handleEdit = (client) => {
         setSelectedClient(client);
         setFormData({
-            name: client.name,
-            phone: client.phone,
-            email: client.email || null,
-            notes: client.notes || '',
-            preferred_service_id: client.preferred_service_id || null
+            name: client?.name,
+            phone: client?.phone,
+            email: client?.email || null,
+            notes: client?.notes || '',
+            preferred_service_id: client?.preferred_service_id || null
         });
         setIsModalOpen(true);
     };
@@ -216,8 +216,8 @@ const Clientes = () => {
     const filteredAndSortedClients = clients
         .filter(client => {
             const searchLower = searchTerm.toLowerCase();
-            return client.name.toLowerCase().includes(searchLower) ||
-                   client.phone.includes(searchTerm) ||
+            return client?.name.toLowerCase().includes(searchLower) ||
+                   client?.phone.includes(searchTerm) ||
                    (client.email && client.email.toLowerCase().includes(searchLower));
         })
         .sort((a, b) => {

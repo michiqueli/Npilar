@@ -180,12 +180,12 @@ const SummaryTab = ({ analyticsData, dateRange, selectedDays }) => {
                     <h3 className="text-xl font-bold mb-4">Top Clientes</h3>
                     <div className="space-y-4">
                         {analyticsData.topClients && analyticsData.topClients.map(client => (
-                            <div key={client.name} className="flex items-center">
+                            <div key={client?.name} className="flex items-center">
                                 <Avatar className="h-10 w-10">
                                     <AvatarFallback className="bg-muted text-foreground">{client.avatar}</AvatarFallback>
                                 </Avatar>
                                 <div className="ml-4 flex-1">
-                                    <p className="font-bold">{client.name}</p>
+                                    <p className="font-bold">{client?.name}</p>
                                     <p className="text-sm text-muted-foreground">{client.visits} visitas</p>
                                 </div>
                                 <p className="font-bold text-success">${client.spent}</p>

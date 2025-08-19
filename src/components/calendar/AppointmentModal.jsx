@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,7 +53,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
             if (preselectedClient) {
                 setTab('existing');
                 setSelectedClientId(preselectedClient.id);
-                setClientSearch(preselectedClient.name);
+                setClientSearch(preselectedClient?.name);
                 setIsClientListVisible(false);
             }
 
@@ -73,8 +73,8 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
     useEffect(() => {
         if (clientSearch && !selectedClientId) {
             const results = clients.filter(c => 
-                c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                (c.phone && c.phone.includes(clientSearch))
+                c?.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                (c?.phone && c?.phone.includes(clientSearch))
             );
             setFilteredClients(results);
             setIsClientListVisible(true);
@@ -134,7 +134,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                 toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, completa el nombre del nuevo cliente.' });
                 return;
             }
-            clientDetails = { isNew: true, name: newClientName, phone: newClientPhone };
+            clientDetails = { isNew: true, name: newClientName, phone: newClientPhone || null };
         } else {
             if (!selectedClientId) {
                 toast({ variant: 'destructive', title: 'Datos incompletos', description: 'Por favor, selecciona un cliente existente.' });
@@ -145,7 +145,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                 toast({ variant: 'destructive', title: 'Error', description: 'El cliente seleccionado no es válido.' });
                 return;
             }
-            clientDetails = { isNew: false, clientId: client.id, clientName: client.name };
+            clientDetails = { isNew: false, clientId: client?.id, clientName: client?.name };
         }
 
         if (!selectedServiceId) {
@@ -242,11 +242,11 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                                 {isClientListVisible && (
                                     <div aria-live="polite" className="absolute z-20 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
                                         {filteredClients.length > 0 ? filteredClients.map(client => (
-                                            <div key={client.id} onMouseDown={() => { setSelectedClientId(client.id); setClientSearch(client.name); setIsClientListVisible(false); }}
+                                            <div key={client?.id} onMouseDown={() => { setSelectedClientId(client.id); setClientSearch(client?.name); setIsClientListVisible(false); }}
                                                  className={cn("p-3 cursor-pointer hover:bg-accent flex justify-between items-center", selectedClientId === client.id ? "bg-primary/10" : "")}>
                                                 <div>
-                                                    <p className="font-semibold">{client.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{client.phone}</p>
+                                                    <p className="font-semibold">{client?.name || 'Anonimo'}</p>
+                                                    <p className="text-xs text-muted-foreground">{client?.phone || 'N/A'}</p>
                                                 </div>
                                                 {client.last_visit_at && <p className="text-xs text-muted-foreground">Última visita: {format(new Date(client.last_visit_at), 'dd/MM/yy')}</p>}
                                             </div>
@@ -278,7 +278,7 @@ const AppointmentModal = ({ isOpen, onClose, modalData, onSave, clients, service
                             <SelectContent>
                                 {services.map(service => (
                                     <SelectItem key={service.id} value={service.id.toString()}>
-                                        {service.name} - ${service.sale_price} ({service.duration_min} min)
+                                        {service?.name} - ${service.sale_price} ({service.duration_min} min)
                                     </SelectItem>
                                 ))}
                             </SelectContent>

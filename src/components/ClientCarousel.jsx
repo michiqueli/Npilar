@@ -28,17 +28,17 @@ const ClientCard = ({ title, appointment, onRegisterPayment, onWhatsApp, onViewP
     const isPaid = status === 'PAID';
 
     return (
-        <motion.div 
+        <motion.div
             className="h-full flex flex-col justify-between p-6 bg-card rounded-xl border shadow-sm"
             whileHover={{ y: -5, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}
             transition={{ duration: 0.2 }}
         >
             <div>
                 <p className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-2">{title}</p>
-                <h3 className="text-2xl font-bold text-foreground truncate">{client.name}</h3>
+                <h3 className="text-2xl font-bold text-foreground truncate">{client?.name}</h3>
                 <div className="flex items-center gap-2 text-muted-foreground mt-1">
                     <Clock className="w-4 h-4" />
-                    <p className="font-medium">{format(parseISO(appointment_at), 'HH:mm')} - {service.name}</p>
+                    <p className="font-medium">{format(parseISO(appointment_at), 'HH:mm')} - {service?.name}</p>
                 </div>
             </div>
             <div className="mt-6 flex flex-col xl:flex-row gap-2">
@@ -48,13 +48,13 @@ const ClientCard = ({ title, appointment, onRegisterPayment, onWhatsApp, onViewP
                 <Button onClick={() => onWhatsApp(client)} variant="secondary" size="sm" className="flex-1">
                     <MessageSquare className="w-4 h-4 mr-2" /> WhatsApp
                 </Button>
-               <Tooltip>
+                <Tooltip>
                     <TooltipTrigger asChild>
                         <div className="flex-1">
-                            <Button 
-                                onClick={() => onRegisterPayment(appointment)} 
-                                variant="primary" 
-                                size="sm" 
+                            <Button
+                                onClick={() => onRegisterPayment(appointment)}
+                                variant="primary"
+                                size="sm"
                                 className="w-full"
                                 disabled={isPaid}
                             >
@@ -115,7 +115,7 @@ const ClientCarousel = () => {
     // --- LÓGICA CORREGIDA PARA DETERMINAR PASADO, ACTUAL Y PRÓXIMO ---
     const { past, current, next } = useMemo(() => {
         const now = new Date();
-        
+
         // Encontrar el índice de la cita que está ocurriendo ahora
         const currentIndex = appointments.findIndex(a => {
             const start = parseISO(a.appointment_at);
@@ -173,15 +173,15 @@ const ClientCarousel = () => {
                 .from('appointments')
                 .update({ status: 'PAID' })
                 .eq('id', selectedAppointment.id);
-            
-            setAppointments(prev => prev.map(app => 
+
+            setAppointments(prev => prev.map(app =>
                 app.id === selectedAppointment.id ? { ...app, status: 'PAID' } : app
             ));
 
             setPaymentModalOpen(false);
             toast({
                 title: '✅ Pago Registrado',
-                description: `El pago de ${selectedAppointment.clients.name} se ha guardado con éxito.`,
+                description: `El pago de ${selectedAppointment.clients?.name} se ha guardado con éxito.`,
             });
         } catch (error) {
             toast({
@@ -193,9 +193,9 @@ const ClientCarousel = () => {
     };
 
     const handleWhatsApp = (client) => {
-        if (client && client.phone) {
-            const cleanPhoneNumber = client.phone.replace(/[^0-9]/g, '');
-            const message = encodeURIComponent(`Hola ${client.name}, un saludo desde Skin Hair Studio PILAR!`);
+        if (client && client?.phone) {
+            const cleanPhoneNumber = client?.phone.replace(/[^0-9]/g, '');
+            const message = encodeURIComponent(`Hola ${client?.name}, un saludo desde Skin Hair Studio PILAR!`);
             window.open(`https://wa.me/${cleanPhoneNumber}?text=${message}`, '_blank');
         } else {
             toast({
@@ -254,10 +254,10 @@ const ClientCarousel = () => {
                     onClose={() => setPaymentModalOpen(false)}
                     onSave={handleSavePayment}
                     isManual={false}
-                    prefillData={{ 
-                        client: selectedAppointment.clients, 
-                        service: selectedAppointment.services.name, 
-                        amount: selectedAppointment.price_at_time
+                    prefillData={{
+                        client: selectedAppointment?.clients ?? null,
+                        service: selectedAppointment?.services?.name ?? null,
+                        amount: selectedAppointment?.price_at_time ?? null,
                     }}
                 />
             )}

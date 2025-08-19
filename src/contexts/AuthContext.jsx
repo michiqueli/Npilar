@@ -174,7 +174,7 @@ export const AuthProvider = ({ children }) => {
       );
       if (error) throw error;
 
-      toast({ title: `👋 ¡Hola de nuevo, ${data.user.email}!` });
+      toast({ title: `👋 ¡Hola de nuevo, ${data?.user?.email}!` });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -183,7 +183,7 @@ export const AuthProvider = ({ children }) => {
       });
     }
   };
-
+console.log(user)
   const value = {
     user,
     loading,

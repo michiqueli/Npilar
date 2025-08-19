@@ -172,7 +172,7 @@ const Analitica = () => {
             processService(app.services, app.price_at_time, true);
 
             if (app.client_id && app.clients) {
-                if (!clientsMap.has(app.client_id)) clientsMap.set(app.client_id, { name: app.clients.name, visits: 0, spent: 0 });
+                if (!clientsMap.has(app.client_id)) clientsMap.set(app.client_id, { name: app.clients?.name, visits: 0, spent: 0 });
                 const currentClient = clientsMap.get(app.client_id);
                 currentClient.visits += 1;
                 currentClient.spent += app.price_at_time || 0;
@@ -192,7 +192,7 @@ const Analitica = () => {
         });
         
         const services = Array.from(servicesMap, ([name, data]) => ({ name, ...data, total_sales: data.appointments + data.manual_sales })).sort((a, b) => b.revenue - a.revenue);
-        const topClients = Array.from(clientsMap.values()).sort((a, b) => b.spent - a.spent).slice(0, 5).map(client => ({ ...client, avatar: client.name.substring(0, 2).toUpperCase() }));
+        const topClients = Array.from(clientsMap.values()).sort((a, b) => b.spent - a.spent).slice(0, 5).map(client => ({ ...client, avatar: client?.name.substring(0, 2).toUpperCase() }));
         const dailyData = Array.from(dailyMap, ([date, data]) => ({ date, day: format(parseISO(date), 'dd'), ...data })).sort((a, b) => a.date.localeCompare(b.date));
 
         const serviceProfitData = services.map(s => {

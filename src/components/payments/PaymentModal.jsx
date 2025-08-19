@@ -106,10 +106,10 @@ const PaymentModal = ({
   const handleClientSelect = (client) => {
     setFormData((prev) => ({
       ...prev,
-      clientId: client.id,
-      clientName: client.name,
+      clientId: client?.id,
+      clientName: client?.name,
     }));
-    setClientSearch(client.name);
+    setClientSearch(client?.name);
   };
 
   const handleSubmit = (e) => {
@@ -127,11 +127,12 @@ const PaymentModal = ({
   };
 
   const filteredClients = Array.isArray(clients)
-    ? clients.filter((c) =>
+  ? clients.filter(
+      (c) =>
+        typeof c?.name === "string" &&
         c.name.toLowerCase().includes(clientSearch.toLowerCase())
-      )
-    : [];
-
+    )
+  : [];
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg bg-background top-12 sm:left-[20%] left-[5%] xl:top-12 xl:left-[35%]">
@@ -195,7 +196,7 @@ const PaymentModal = ({
                         key={service.id}
                         value={service.id.toString()}
                       >
-                        {service.name}
+                        {service?.name || 'Servicio'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -235,7 +236,7 @@ const PaymentModal = ({
                       >
                         <div className="flex items-center space-x-2">
                           <User className="w-4 h-4" />
-                          <span>{client.name}</span>
+                          <span>{client?.name || 'Cliente'}</span>
                         </div>
                       </button>
                     ))}
