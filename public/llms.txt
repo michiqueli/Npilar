@@ -1,8 +1,8 @@
 ## Pages
-- [Agenda - N - Pilar](/calendario): Agenda semanal y mensual interactiva para gestionar citas.
-- [Análisis del Negocio - Skin Hair Studio](/analitica): Análisis financiero y estadísticas de rendimiento de tu negocio.
+- [`}](/analitica): Análisis financiero y estadísticas de rendimiento de tu negocio.
+- [`}](/calendario): Agenda semanal y mensual interactiva para gestionar citas.
+- [`}](/clientes): Gestiona tu base de clientes, su historial de visitas, preferencias y más.
+- [`}](/dashboard): Panel principal de control para gestión diaria de tu negocio.
+- [`}](/productos): Catálogo completo de servicios y precios de la barbería
 - [Crear Cuenta - N - Pilar](/register): No description available
 - [Iniciar Sesión - N - Pilar](/login): No description available
-- [Mis Clientes - N - Pilar](/clientes): Gestiona tu base de clientes, su historial de visitas, preferencias y más.
-- [Panel del Día - Skin Hair Studio PILAR](/dashboard): Panel principal de control para gestión diaria de tu negocio.
-- [Servicios - N - Pilar](/productos): Catálogo completo de servicios y precios de la barbería

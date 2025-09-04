@@ -29,7 +29,7 @@ const Analitica = () => {
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState('resumen');
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    
+
     const [appointmentsData, setAppointmentsData] = useState([]);
     const [paymentsData, setPaymentsData] = useState([]);
     const [currentMonthPayments, setCurrentMonthPayments] = useState([]);
@@ -114,7 +114,7 @@ const Analitica = () => {
         fetchAnalyticsData();
     }, [dateRange]);
 
-     const quickSelectOptions = [
+    const quickSelectOptions = [
         { label: 'Mes Actual', value: 'this_month' },
         { label: 'Mes Anterior', value: 'last_month' },
         { label: 'Año Actual', value: 'this_year' },
@@ -122,33 +122,33 @@ const Analitica = () => {
         { label: 'Últimos 12 Meses', value: 'last_12_months' },
     ];
     const handleQuickSelect = (period) => {
-            let newRange = { from: null, to: null };
-            const today = dayjs();
-    
-            switch (period) {
-                case 'this_month':
-                    newRange = { from: today.startOf('month').toDate(), to: today.endOf('month').toDate() };
-                    break;
-                case 'last_month':
-                    const lastMonth = today.subtract(1, 'month');
-                    newRange = { from: lastMonth.startOf('month').toDate(), to: lastMonth.endOf('month').toDate() };
-                    break;
-                case 'this_year':
-                    newRange = { from: today.startOf('year').toDate(), to: today.endOf('year').toDate() };
-                    break;
-                case 'last_year':
-                    const lastYear = today.subtract(1, 'year');
-                    newRange = { from: lastYear.startOf('year').toDate(), to: lastYear.endOf('year').toDate() };
-                    break;
-                case 'last_12_months':
-                    newRange = { from: today.subtract(11, 'month').startOf('month').toDate(), to: today.endOf('month').toDate() };
-                    break;
-                default:
-                    break;
-            }
-            setDateRange(newRange);
-        };
-    
+        let newRange = { from: null, to: null };
+        const today = dayjs();
+
+        switch (period) {
+            case 'this_month':
+                newRange = { from: today.startOf('month').toDate(), to: today.endOf('month').toDate() };
+                break;
+            case 'last_month':
+                const lastMonth = today.subtract(1, 'month');
+                newRange = { from: lastMonth.startOf('month').toDate(), to: lastMonth.endOf('month').toDate() };
+                break;
+            case 'this_year':
+                newRange = { from: today.startOf('year').toDate(), to: today.endOf('year').toDate() };
+                break;
+            case 'last_year':
+                const lastYear = today.subtract(1, 'year');
+                newRange = { from: lastYear.startOf('year').toDate(), to: lastYear.endOf('year').toDate() };
+                break;
+            case 'last_12_months':
+                newRange = { from: today.subtract(11, 'month').startOf('month').toDate(), to: today.endOf('month').toDate() };
+                break;
+            default:
+                break;
+        }
+        setDateRange(newRange);
+    };
+
 
     const analyticsData = useMemo(() => {
         if (!appointmentsData || !paymentsData) return {};
@@ -156,7 +156,7 @@ const Analitica = () => {
         const periodTotalRevenue = paymentsData.reduce((acc, payment) => acc + (payment.amount || 0), 0);
         const currentMonthTotalRevenue = currentMonthPayments.reduce((acc, payment) => acc + (payment.amount || 0), 0);
         const prevPeriodTotalRevenue = prevPeriodPayments.reduce((acc, payment) => acc + (payment.amount || 0), 0);
-        
+
         const totalAppointments = appointmentsData.length;
         const averageTicket = totalAppointments > 0 ? periodTotalRevenue / totalAppointments : 0;
         const newClients = appointmentsData.filter(a => a.clients && a.clients.total_visits <= 1).length;
@@ -226,7 +226,7 @@ const Analitica = () => {
                 processService(payment.services, payment.amount, false);
             }
         });
-        
+
         const services = Array.from(servicesMap, ([name, data]) => ({ name, ...data, total_sales: data.appointments + data.manual_sales })).sort((a, b) => b.revenue - a.revenue);
         const topClients = Array.from(clientsMap.values()).sort((a, b) => b.spent - a.spent).slice(0, 5).map(client => ({ ...client, avatar: client?.name.substring(0, 2).toUpperCase() }));
         const dailyData = Array.from(dailyMap, ([date, data]) => ({ date, day: format(parseISO(date), 'dd'), ...data })).sort((a, b) => a.date.localeCompare(b.date));
@@ -287,8 +287,8 @@ const Analitica = () => {
         };
     }, [appointmentsData, paymentsData, currentMonthPayments, prevPeriodPayments, prevPeriodAppointments, prevMonthAppointments, prevPrevMonthAppointments, historicalAppointments, dateRange]);
 
-    if(loading) return <div>Cargando...</div>
-    if(error) return <div>Error: {error}</div>
+    if (loading) return <div>Cargando...</div>
+    if (error) return <div>Error: {error}</div>
 
     return (
         <>
@@ -296,7 +296,7 @@ const Analitica = () => {
                 <title>{`Analisis - ${config.appName}`}</title>
                 <meta name="description" content="Análisis financiero y estadísticas de rendimiento de tu negocio." />
             </Helmet>
-            
+
             <div className="space-y-6">
                 <motion.div
                     className="flex flex-col md:flex-row flex-wrap items-start md:items-center justify-between gap-4"
@@ -308,26 +308,30 @@ const Analitica = () => {
                         <h1 className="text-3xl font-bold text-foreground">Análisis del Negocio</h1>
                         <p className="text-muted-foreground mt-1">Tus insights para tomar decisiones inteligentes.</p>
                     </div>
-                    <div className="grid grid-col-1 items-center lg:justify-end lg:items-end gap-2 w-full justify-center lg:grid-cols-[0.5fr_3fr]">
-                        <DayFilterDropdown selectedDays={selectedDays} setSelectedDays={setSelectedDays} />
-                        <PeriodPicker dateRange={dateRange} setDateRange={setDateRange} variant='ghost'/>
-                    </div>
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/40">
-                                    <p className="text-sm font-medium text-muted-foreground mr-2">Atajos:</p>
-                                    {quickSelectOptions.map(opt => (
-                                        <Button
-                                            key={opt.value}
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8"
-                                            onClick={() => handleQuickSelect(opt.value)}
-                                        >
-                                            {opt.label}
-                                        </Button>
-                                    ))}
-                                </div>
+                    {activeTab !== 'caja' && (
+                        <>
+                            <div className="grid grid-col-1 items-center lg:justify-end lg:items-end gap-2 w-full justify-center lg:grid-cols-[0.5fr_3fr]">
+                                <DayFilterDropdown selectedDays={selectedDays} setSelectedDays={setSelectedDays} />
+                                <PeriodPicker dateRange={dateRange} setDateRange={setDateRange} variant='ghost' />
+                            </div>
+                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/40">
+                                <p className="text-sm font-medium text-muted-foreground mr-2">Atajos:</p>
+                                {quickSelectOptions.map(opt => (
+                                    <Button
+                                        key={opt.value}
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8"
+                                        onClick={() => handleQuickSelect(opt.value)}
+                                    >
+                                        {opt.label}
+                                    </Button>
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </motion.div>
-                
+
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                         <TabsTrigger value="resumen"><BarChart2 className="w-4 h-4 mr-2" />Resumen</TabsTrigger>
@@ -335,11 +339,11 @@ const Analitica = () => {
                         <TabsTrigger value="historico"><TrendingUp className="w-4 h-4 mr-2" />Tendencias</TabsTrigger>
                         <TabsTrigger value="caja"><Wallet className="w-4 h-4 mr-2" />Caja/Finanzas</TabsTrigger>
                     </TabsList>
-                    
+
                     <div className="mt-4">
                         {activeTab === 'resumen' && (
-                            <SummaryTab 
-                                analyticsData={analyticsData} 
+                            <SummaryTab
+                                analyticsData={analyticsData}
                                 dateRange={dateRange}
                                 selectedDays={selectedDays}
                             />
