@@ -1,25 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { format, subMonths } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { subMonths } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { supabase } from '@/lib/supabaseClient'; // Usamos la ruta correcta
+import { X } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import PeriodPicker from '../analytics/PeriodPicker';
+import dayjs from 'dayjs';
 
 const expenseCategories = ['Productos', 'Alquiler', 'Suministros', 'Marketing', 'Salarios', 'Mantenimiento', 'Otros'];
 const paymentMethods = ['Todos', 'Efectivo', 'Tarjeta', 'Transferencia', 'Otro'];
 
 const FilterBar = ({ onApplyFilters, onClearFilters }) => {
     const [dateRange, setDateRange] = useState({
-        from: subMonths(new Date(), 1),
-        to: new Date(),
+        from: dayjs().startOf('month').toDate(),
+        to: dayjs().endOf('month').toDate(),
     });
+
     const [type, setType] = useState('Todos');
     const [category, setCategory] = useState('Todos');
     const [paymentMethod, setPaymentMethod] = useState('Todos');
@@ -36,7 +35,7 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
                     .eq('active', true);
 
                 if (error) throw error;
-                
+
                 const serviceNames = data.map(s => s.name);
                 setIncomeServices(serviceNames);
             } catch (error) {
@@ -45,7 +44,7 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
         };
         fetchServices();
     }, []);
-    
+
     const categories = useMemo(() => {
         if (type === 'income') return ['Todos', ...incomeServices];
         if (type === 'expense') return ['Todos', ...expenseCategories];
@@ -56,9 +55,15 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
         setCategory('Todos');
     }, [type]);
 
-    // --- NUEVO: useEffect para aplicar filtros automáticamente al cambiar ---
+    const quickSelectOptions = [
+        { label: 'Mes Actual', value: 'this_month' },
+        { label: 'Mes Anterior', value: 'last_month' },
+        { label: 'Año Actual', value: 'this_year' },
+        { label: 'Año Anterior', value: 'last_year' },
+        { label: 'Últimos 12 Meses', value: 'last_12_months' },
+    ];
+
     useEffect(() => {
-        // Usamos un temporizador para no aplicar el filtro instantáneamente mientras el usuario escribe
         const handler = setTimeout(() => {
             onApplyFilters({
                 dateRange,
@@ -68,9 +73,7 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
                 minAmount: minAmount ? parseFloat(minAmount) : null,
                 maxAmount: maxAmount ? parseFloat(maxAmount) : null,
             });
-        }, 500); // Espera 500ms después de la última modificación para aplicar
-
-        // Limpiamos el temporizador si el usuario sigue modificando los filtros
+        }, 500);
         return () => {
             clearTimeout(handler);
         };
@@ -86,6 +89,34 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
         onClearFilters();
     };
 
+    const handleQuickSelect = (period) => {
+        let newRange = { from: null, to: null };
+        const today = dayjs();
+
+        switch (period) {
+            case 'this_month':
+                newRange = { from: today.startOf('month').toDate(), to: today.endOf('month').toDate() };
+                break;
+            case 'last_month':
+                const lastMonth = today.subtract(1, 'month');
+                newRange = { from: lastMonth.startOf('month').toDate(), to: lastMonth.endOf('month').toDate() };
+                break;
+            case 'this_year':
+                newRange = { from: today.startOf('year').toDate(), to: today.endOf('year').toDate() };
+                break;
+            case 'last_year':
+                const lastYear = today.subtract(1, 'year');
+                newRange = { from: lastYear.startOf('year').toDate(), to: lastYear.endOf('year').toDate() };
+                break;
+            case 'last_12_months':
+                newRange = { from: today.subtract(11, 'month').startOf('month').toDate(), to: today.endOf('month').toDate() };
+                break;
+            default:
+                break;
+        }
+        setDateRange(newRange);
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -93,46 +124,11 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
             transition={{ duration: 0.5 }}
             className="p-4 rounded-lg bg-card border mb-6"
         >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end">
-                <div className="sm:col-span-2 lg:col-span-1">
+            <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-[1.5fr_1.5fr] xl:grid-cols-[1.75fr_1.25fr_1.25fr_1.25fr_1.25fr] gap-4 items-end">
+                <div className='p-1'>
                     <Label>Rango de Fechas</Label>
-                    <Popover>
-                        <PopoverTrigger asChild className="border border-gray-300">
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-start text-left font-normal mt-1",
-                                    !dateRange && "text-muted-foreground"
-                                )}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dateRange?.from ? (
-                                    dateRange.to ? (
-                                        <>
-                                            {format(dateRange.from, "dd,MM,yy", { locale: es })} -{" "}
-                                            {format(dateRange.to, "dd,MM,yy", { locale: es })}
-                                        </>
-                                    ) : (
-                                        format(dateRange.from, "dd,MM,yy", { locale: es })
-                                    )
-                                ) : (
-                                    <span>Elige un rango</span>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={dateRange?.from}
-                                selected={dateRange}
-                                onSelect={setDateRange}
-                                numberOfMonths={2}
-                            />
-                        </PopoverContent>
-                    </Popover>
-                </div>
-
+                    <PeriodPicker dateRange={dateRange} setDateRange={setDateRange}
+                    /></div>
                 <div>
                     <Label>Tipo</Label>
                     <Select value={type} onValueChange={setType}>
@@ -155,7 +151,7 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
                     </Select>
                 </div>
 
-                <div>
+                <div >
                     <Label>Método de Pago</Label>
                     <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                         <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
@@ -176,12 +172,27 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
                     </div>
                 </div>
             </div>
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/40">
+                <p className="text-sm font-medium text-muted-foreground mr-2">Atajos:</p>
+                {quickSelectOptions.map(opt => (
+                    <Button
+                        key={opt.value}
+                        variant="outline"
+                        size="sm"
+                        className="h-8"
+                        onClick={() => handleQuickSelect(opt.value)}
+                    >
+                        {opt.label}
+                    </Button>
+                ))}
+            </div>
             <div className="flex justify-end mt-4 pt-4 border-t">
                 <Button variant="ghost" onClick={handleClear}>
                     <X className="w-4 h-4 mr-2" />
                     Limpiar Filtros
                 </Button>
             </div>
+            
         </motion.div>
     );
 };

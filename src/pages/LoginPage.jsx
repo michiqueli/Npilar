@@ -30,7 +30,7 @@ const LoginPage = () => {
         if (success) {
             navigate('/');
         }
-        
+
         setIsLoading(false);
     };
 
@@ -107,7 +107,7 @@ const LoginPage = () => {
                                     </div>
                                 </div>
                             </div>
-
+                            {/*}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
                                     <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={setRememberMe} />
@@ -116,12 +116,13 @@ const LoginPage = () => {
                                     </Label>
                                 </div>
                             </div>
-
+                            */}
                             <div>
                                 <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
                                     {isLoading ? 'Iniciando...' : 'Iniciar Sesión'}
                                 </Button>
                             </div>
+                            {/*
                             <div className="relative">
                                 <div className="absolute inset-0 flex items-center">
                                     <div className="w-full border-t border-border" />
@@ -130,12 +131,14 @@ const LoginPage = () => {
                                     <span className="bg-card/80 px-2 text-muted-foreground backdrop-blur-lg">O continúa con</span>
                                 </div>
                             </div>
+                            
                             <div>
                                 <Button type="button" variant="secondary" className="w-full" size="lg" onClick={handleFaceId}>
                                     <Fingerprint className="mr-2 h-5 w-5" />
                                     Face ID / Biometría
                                 </Button>
                             </div>
+                            */}
                         </form>
                     </div>
                 </motion.div>

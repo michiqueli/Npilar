@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Users, Calendar, AlertCircle, Sparkles, DollarSign, Repeat, Scissors } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { startOfDay, endOfDay, getDay } from 'date-fns';
-import { supabase } from '@/lib/supabaseClient'; // Usamos la ruta correcta
+import { supabase } from '@/lib/supabaseClient';
 
 const AgendaOverview = () => {
     const { toast } = useToast();

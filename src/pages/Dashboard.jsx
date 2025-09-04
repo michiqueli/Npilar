@@ -60,13 +60,14 @@ const Dashboard = () => {
         <motion.div variants={itemVariants}>
           <TodaySchedule />
         </motion.div>
-        
+        {/*
         <motion.div variants={itemVariants}>
           <ExpenseWidget />
         </motion.div>
+        */}
       </motion.div>
 
-      <FloatingExpenseButton />
+     {/* <FloatingExpenseButton />*/}
     </>
   );
 };

@@ -61,9 +61,11 @@ const DayFilterDropdown = ({ selectedDays, setSelectedDays }) => {
         <DropdownMenuItem onSelect={handleSelectAll}>
           Seleccionar Todos
         </DropdownMenuItem>
+        {/*
         <DropdownMenuItem onSelect={handleClearAll}>
           Limpiar Selección
         </DropdownMenuItem>
+        */}
       </DropdownMenuContent>
     </DropdownMenu>
   );

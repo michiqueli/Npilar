@@ -114,6 +114,42 @@ const Analitica = () => {
         fetchAnalyticsData();
     }, [dateRange]);
 
+     const quickSelectOptions = [
+        { label: 'Mes Actual', value: 'this_month' },
+        { label: 'Mes Anterior', value: 'last_month' },
+        { label: 'Año Actual', value: 'this_year' },
+        { label: 'Año Anterior', value: 'last_year' },
+        { label: 'Últimos 12 Meses', value: 'last_12_months' },
+    ];
+    const handleQuickSelect = (period) => {
+            let newRange = { from: null, to: null };
+            const today = dayjs();
+    
+            switch (period) {
+                case 'this_month':
+                    newRange = { from: today.startOf('month').toDate(), to: today.endOf('month').toDate() };
+                    break;
+                case 'last_month':
+                    const lastMonth = today.subtract(1, 'month');
+                    newRange = { from: lastMonth.startOf('month').toDate(), to: lastMonth.endOf('month').toDate() };
+                    break;
+                case 'this_year':
+                    newRange = { from: today.startOf('year').toDate(), to: today.endOf('year').toDate() };
+                    break;
+                case 'last_year':
+                    const lastYear = today.subtract(1, 'year');
+                    newRange = { from: lastYear.startOf('year').toDate(), to: lastYear.endOf('year').toDate() };
+                    break;
+                case 'last_12_months':
+                    newRange = { from: today.subtract(11, 'month').startOf('month').toDate(), to: today.endOf('month').toDate() };
+                    break;
+                default:
+                    break;
+            }
+            setDateRange(newRange);
+        };
+    
+
     const analyticsData = useMemo(() => {
         if (!appointmentsData || !paymentsData) return {};
 
@@ -272,10 +308,24 @@ const Analitica = () => {
                         <h1 className="text-3xl font-bold text-foreground">Análisis del Negocio</h1>
                         <p className="text-muted-foreground mt-1">Tus insights para tomar decisiones inteligentes.</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+                    <div className="grid grid-col-1 items-center lg:justify-end lg:items-end gap-2 w-full justify-center lg:grid-cols-[0.5fr_3fr]">
                         <DayFilterDropdown selectedDays={selectedDays} setSelectedDays={setSelectedDays} />
-                        <PeriodPicker dateRange={dateRange} setDateRange={setDateRange} />
+                        <PeriodPicker dateRange={dateRange} setDateRange={setDateRange} variant='ghost'/>
                     </div>
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/40">
+                                    <p className="text-sm font-medium text-muted-foreground mr-2">Atajos:</p>
+                                    {quickSelectOptions.map(opt => (
+                                        <Button
+                                            key={opt.value}
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8"
+                                            onClick={() => handleQuickSelect(opt.value)}
+                                        >
+                                            {opt.label}
+                                        </Button>
+                                    ))}
+                                </div>
                 </motion.div>
                 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

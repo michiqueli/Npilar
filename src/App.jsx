@@ -17,6 +17,8 @@ import Productos from "@/pages/Productos";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 function App() {
   const ProtectedRoute = ({ children }) => {
@@ -43,6 +45,7 @@ function App() {
       <Router>
         <AuthProvider>
           <TooltipProvider>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
@@ -69,6 +72,7 @@ function App() {
               />
             </Routes>
             <Toaster />
+            </LocalizationProvider>
           </TooltipProvider>
         </AuthProvider>
       </Router>

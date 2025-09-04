@@ -44,7 +44,7 @@ const MonthView = ({ monthDays, onDayClick, appointments, currentDate, availabil
             const dayAppointments = appointments.filter(a => isSameDay(parseISO(a.appointment_at), day));
             const isCurrentMonth = day.getMonth() === currentDate.getMonth();
             const isTheToday = isToday(day);
-            
+
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayOfWeek = day.getDay().toString();
             const schedule = availability.exceptions[dateKey] ?? availability.default[dayOfWeek] ?? { available: false, ranges: [] };
@@ -69,9 +69,9 @@ const MonthView = ({ monthDays, onDayClick, appointments, currentDate, availabil
                         </div>
                     )}
                     {!schedule.available && isCurrentMonth && (
-                         <div className="mt-2 text-xs bg-destructive/20 text-destructive rounded px-2 py-1 text-center font-semibold">
-                             Cerrado
-                         </div>
+                        <div className="mt-2 text-xs bg-destructive/20 text-destructive rounded px-2 py-1 text-center font-semibold">
+                            Cerrado
+                        </div>
                     )}
                 </div>
             )
@@ -87,7 +87,7 @@ const Calendario = () => {
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState('week');
-    
+
     const [appointments, setAppointments] = useState([]);
     const [clients, setClients] = useState([]);
     const [services, setServices] = useState([]);
@@ -142,18 +142,18 @@ const Calendario = () => {
                     return { ...appointment, hourIndex, durationInSlots };
                 });
                 setAppointments(appointmentsWithIndex);
-                
+
                 setClients(clientsRes.data || []);
                 setServices(servicesRes.data || []);
 
-                const formattedAvailability = { 
+                const formattedAvailability = {
                     default: {
                         '0': { available: false, ranges: [], breaks: [] }, '1': { available: false, ranges: [], breaks: [] },
                         '2': { available: false, ranges: [], breaks: [] }, '3': { available: false, ranges: [], breaks: [] },
                         '4': { available: false, ranges: [], breaks: [] }, '5': { available: false, ranges: [], breaks: [] },
                         '6': { available: false, ranges: [], breaks: [] },
-                    }, 
-                    exceptions: {} 
+                    },
+                    exceptions: {}
                 };
 
                 schedulesRes.data.forEach(s => {
@@ -165,7 +165,7 @@ const Calendario = () => {
                         formattedAvailability.default[dayKey].ranges.push({ start: s.start_time, end: s.end_time });
                     }
                 });
-                
+
                 exceptionsRes.data.forEach(e => {
                     formattedAvailability.exceptions[e.exception_date] = { available: false, ranges: [], breaks: [] };
                 });
@@ -247,7 +247,7 @@ const Calendario = () => {
             appointmentDateTime.setMilliseconds(0);
 
             const appointmentTimestamp = format(appointmentDateTime, "yyyy-MM-dd'T'HH:mm:ssXXX");
-            
+
             const newAppointmentForDB = {
                 client_id: clientId,
                 service_id: data.details.serviceId,
@@ -265,7 +265,7 @@ const Calendario = () => {
                 .single();
 
             if (error) throw error;
-            
+
             const durationInSlots = Math.ceil((insertedAppointment.services?.duration_min || 15) / 15);
             const newAppointmentForState = { ...insertedAppointment, hourIndex: data.hourIndex, durationInSlots };
             setAppointments(prevAppointments => [...prevAppointments, newAppointmentForState]);
@@ -287,7 +287,7 @@ const Calendario = () => {
             });
         }
     };
-    
+
     const handleDeleteAppointment = (appointment) => {
         setAppointmentToDelete(appointment);
         setIsConfirmOpen(true);
@@ -320,7 +320,7 @@ const Calendario = () => {
             setAppointmentToDelete(null);
         }
     };
-    
+
     const handleSaveAvailability = async (newAvailability) => {
         setLoading(true);
         try {
@@ -335,7 +335,7 @@ const Calendario = () => {
                 .from('schedule_exceptions')
                 .delete()
                 .neq('id', 0);
-            
+
             if (deleteExceptionsError) throw deleteExceptionsError;
 
             const newSchedules = [];
@@ -368,7 +368,7 @@ const Calendario = () => {
 
                 if (insertSchedulesError) throw insertSchedulesError;
             }
-            
+
             const newExceptions = [];
             for (const dateKey in newAvailability.exceptions) {
                 const exceptionSchedule = newAvailability.exceptions[dateKey];
@@ -379,7 +379,7 @@ const Calendario = () => {
                     });
                 }
             }
-            
+
             if (newExceptions.length > 0) {
                 const { error: insertExceptionsError } = await supabase
                     .from('schedule_exceptions')
@@ -410,9 +410,9 @@ const Calendario = () => {
             const start = startOfWeek(currentDate, { weekStartsOn: 1 });
             const end = endOfWeek(currentDate, { weekStartsOn: 1 });
             if (start.getMonth() === end.getMonth()) {
-                return `${format(start, 'd')} - ${format(end, 'd \'de\' MMMM \'de\' yyyy', { locale: es })}`;
+                return `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy', { locale: es })}`;
             }
-            return `${format(start, 'd \'de\' MMMM')} - ${format(end, 'd \'de\' MMMM \'de\' yyyy', { locale: es })}`;
+            return `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy', { locale: es })}`;
         }
         return format(currentDate, 'MMMM yyyy', { locale: es });
     }, [currentDate, view, isMobile]);
@@ -433,7 +433,7 @@ const Calendario = () => {
         if (!schedule || !schedule.available) return 'unavailable';
 
         const slotTime = 8 * 60 + hourIndex * 15;
-        
+
         const isBreak = schedule.breaks.some(range => {
             const startTime = timeToMinutes(range.start);
             const endTime = timeToMinutes(range.end);
@@ -465,35 +465,36 @@ const Calendario = () => {
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center justify-center gap-2">
                         <Button variant="secondary" onClick={() => setCurrentDate(new Date())}>Hoy</Button>
-                        <div className="flex items-center gap-1 bg-card p-1 rounded-lg border">
+                        <div className="flex items-center gap-1">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" onClick={() => changeDate(-1, view)} aria-label="Periodo anterior">
-                                        <ChevronLeft className="h-6 w-6 text-foreground" />
+                                    <Button variant="ghost" className="bg-primary/10 hover:bg-primary/20 rounded-full h-9 w-9" size="icon" onClick={() => changeDate(-1, view)} aria-label="Periodo anterior">
+                                        <ChevronLeft className="h-5 w-5 text-primary" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent><p>Periodo anterior</p></TooltipContent>
                             </Tooltip>
+
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="secondary" className="w-auto sm:w-[280px] justify-start text-left font-normal text-lg">
+                                        <CalendarIcon className="mr-3 h-5 w-5" />
+                                        <span className="capitalize">{title}</span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar mode="single" selected={currentDate} onSelect={(date) => date && setCurrentDate(date)} initialFocus />
+                                </PopoverContent>
+                            </Popover>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" onClick={() => changeDate(1, view)} aria-label="Siguiente periodo">
-                                        <ChevronRight className="h-6 w-6 text-foreground" />
+                                    <Button variant="ghost" size="icon" className="bg-primary/10 hover:bg-primary/20 rounded-full h-9 w-9" onClick={() => changeDate(1, view)} aria-label="Siguiente periodo">
+                                        <ChevronRight className="h-5 w-5 text-primary" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent><p>Siguiente periodo</p></TooltipContent>
                             </Tooltip>
                         </div>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="secondary" className="w-auto sm:w-[280px] justify-start text-left font-normal text-lg">
-                                    <CalendarIcon className="mr-3 h-5 w-5" />
-                                    <span className="capitalize">{title}</span>
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="single" selected={currentDate} onSelect={(date) => date && setCurrentDate(date)} initialFocus />
-                            </PopoverContent>
-                        </Popover>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-center gap-2">
@@ -587,7 +588,7 @@ const Calendario = () => {
                         ) : view === 'week' ? (
                             <div className="premium-card p-0 overflow-hidden">
                                 <div className="overflow-x-auto">
-                                    <div 
+                                    <div
                                         className="grid min-w-[800px] relative"
                                         style={{
                                             gridTemplateColumns: '60px repeat(7, 1fr)',
@@ -608,19 +609,19 @@ const Calendario = () => {
                                                     {hourIndex % 4 === 0 ? hour : ''}
                                                 </div>
                                                 {weekDays.map((day, dayIndex) => {
-                                                    const isOccupied = appointments.some(a => 
+                                                    const isOccupied = appointments.some(a =>
                                                         isSameDay(parseISO(a.appointment_at), day) &&
-                                                        hourIndex >= a.hourIndex && 
+                                                        hourIndex >= a.hourIndex &&
                                                         hourIndex < a.hourIndex + a.durationInSlots
                                                     );
-                                                    
+
                                                     if (isOccupied) return null;
 
                                                     const status = getSlotStatus(day, hourIndex);
                                                     return (
-                                                        <div 
-                                                            key={day.toISOString() + hour} 
-                                                            className={cn("border-b border-r flex items-center justify-center", 
+                                                        <div
+                                                            key={day.toISOString() + hour}
+                                                            className={cn("border-b border-r flex items-center justify-center",
                                                                 { 'bg-primary/5': isToday(day) },
                                                                 { 'bg-muted/30 cursor-not-allowed': status === 'break' },
                                                                 { 'bg-muted/20 cursor-not-allowed': status === 'closed' },
@@ -643,7 +644,7 @@ const Calendario = () => {
                                                 })}
                                             </React.Fragment>
                                         ))}
-                                        
+
                                         {appointments.map(appointment => {
                                             const dayIndex = weekDays.findIndex(day => isSameDay(parseISO(appointment.appointment_at), day));
                                             if (dayIndex === -1) return null;
@@ -663,10 +664,10 @@ const Calendario = () => {
                                                         <p className="font-bold text-primary text-sm truncate">{appointment.clients.name}</p>
                                                         <p className="text-primary/80 text-xs truncate">{appointment.services.name}</p>
                                                     </div>
-                                                    
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
+
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
                                                         className="absolute top-1 right-1 h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -683,7 +684,7 @@ const Calendario = () => {
                             </div>
                         ) : (
                             <div className="premium-card p-0 overflow-hidden">
-                               <MonthView monthDays={monthDays} onDayClick={(day) => { setView('week'); setCurrentDate(day); }} appointments={appointments} currentDate={currentDate} availability={availability} />
+                                <MonthView monthDays={monthDays} onDayClick={(day) => { setView('week'); setCurrentDate(day); }} appointments={appointments} currentDate={currentDate} availability={availability} />
                             </div>
                         )}
                     </motion.div>

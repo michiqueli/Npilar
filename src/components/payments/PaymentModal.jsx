@@ -155,15 +155,15 @@ const PaymentModal = ({
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    variant={"outline"}
+                    variant='secondary'
                     className={cn(
-                      "w-full justify-start text-left font-normal mt-1",
+                      "w-full justify-start text-left font-normal mt-1 premium-input bg-white",
                       !formData.date && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.date ? (
-                      format(formData.date, "PPP", { locale: es })
+                      format(formData.date, "dd-MM-yyyy", { locale: es })
                     ) : (
                       <span>Elige una fecha</span>
                     )}

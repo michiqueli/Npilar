@@ -18,7 +18,7 @@ const FinancialIndicators = ({ financialSummary }) => {
                 <TrendingUp className="w-6 h-6 text-green-500" />
               </div>
               <span className="text-sm text-green-500 font-semibold tracking-wide">
-                ENTRA
+                INGRESO
               </span>
             </div>
             <h3 className="text-3xl font-bold text-foreground mb-1">
