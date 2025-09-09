@@ -229,6 +229,7 @@ const FinancialDashboard = () => {
 
     return (
         <>
+            <FilterBar onApplyFilters={setFilters} onClearFilters={() => setFilters(null)} />
             <div className="space-y-6 pb-24 md:pb-0">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-6">
                     <FinancialIndicators financialSummary={financialSummary} />
@@ -240,7 +241,6 @@ const FinancialDashboard = () => {
                     />
                 </div>
 
-                <FilterBar onApplyFilters={setFilters} onClearFilters={() => setFilters(null)} />
 
                 {filteredTransactions.length > 0 ? (
                     <TransactionTable

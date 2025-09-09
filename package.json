@@ -11,6 +11,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mantine/dates": "^8.3.0",
     "@mui/material": "^7.3.2",
     "@mui/x-date-pickers": "^8.11.0",
     "@mui/x-date-pickers-pro": "^8.11.0",
@@ -34,7 +35,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
-    "dayjs": "^1.11.11",
+    "dayjs": "^1.11.18",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.285.0",
     "react": "^18.2.0",

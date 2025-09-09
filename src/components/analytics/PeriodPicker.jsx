@@ -1,92 +1,112 @@
-import React, { useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React from 'react';
+import { DatePickerInput } from '@mantine/dates';
+import { MantineProvider } from '@mantine/core';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DateRangePicker } from '@mui/x-date-pickers-pro';
+import { motion } from 'framer-motion';
 
-dayjs.locale('es');
+import { DatesProvider } from '@mantine/dates';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PeriodPicker = ({ dateRange, setDateRange, variant = 'default' }) => {
-  const muiDateRange = useMemo(() => [
-    dateRange.from ? dayjs(dateRange.from) : null,
-    dateRange.to ? dayjs(dateRange.to) : null
-  ], [dateRange]);
+  const value = [
+    dateRange.from ? dayjs(dateRange.from).toDate() : null,
+    dateRange.to ? dayjs(dateRange.to).toDate() : null
+  ];
 
-  const navigateMonth = (direction) => {
-    const baseDate = dateRange?.from || new Date();
-    const newMonth = direction === 'prev'
-      ? dayjs(baseDate).subtract(1, 'month')
-      : dayjs(baseDate).add(1, 'month');
-
+  const handleChange = (newValue) => {
     setDateRange({
-      from: newMonth.startOf('month').toDate(),
-      to: newMonth.endOf('month').toDate(),
+      from: newValue[0] ? dayjs(newValue[0]).startOf('day').toDate() : null,
+      to: newValue[1] ? dayjs(newValue[1]).endOf('day').toDate() : null,
     });
   };
 
-  const textFieldClasses = variant === 'ghost'
-    ? 'border-0 shadow-none bg-secondary focus:ring-0 mt-1'
-    : '';
-
-  const arrowClases = variant === 'ghost'
-    ? "bg-primary/10 hover:bg-primary/20 rounded-full h-9 w-9"
-    : "bg-secondary/50 hover:bg-secondary rounded-full h-9 w-9";
+  const getVariantStyles = () => {
+    if (variant === 'primary') {
+      return {
+        input: {
+          backgroundColor: '',
+          borderRadius: '0.75rem',
+          textAlign: 'center',
+          fontWeight: 500,
+          height: '2.75rem',
+          marginTop: '0.5rem',
+        },
+      };
+    }
+    return {
+      input: {
+        borderRadius: '0.75rem',
+        textAlign: 'center',
+        fontWeight: 500,
+        height: '2.75rem',
+        marginTop: '0.5rem',
+      }
+    };
+  };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
-      <div className="flex items-center gap-2">
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={arrowClases}
-            onClick={() => navigateMonth('prev')}
-            aria-label="Mes anterior"
-          >
-            <ChevronLeft className="h-5 w-5 text-primary" />
-          </Button>
-        </motion.div>
+    <MantineProvider>
+      <DatesProvider settings={{ locale: 'es', firstDayOfWeek: 1, weekendDays: [0], timezone: 'UTC' }}>
+        <DatePickerInput
+          type="range"
+          placeholder="Selecciona un rango..."
+          value={value}
+          onChange={handleChange}
+          valueFormatter={() => {
+            const from = dateRange.from;
+            const to = dateRange.to;
 
-        <DateRangePicker
-          value={muiDateRange}
-          onChange={(newValue) => {
-            setDateRange({
-              from: newValue[0] ? newValue[0].toDate() : null,
-              to: newValue[1] ? newValue[1].toDate() : null,
-            });
+            if (from && to) {
+              return `${dayjs(from).format('DD/MM/YYYY')} – ${dayjs(to).format('DD/MM/YYYY')}`;
+            }
+            if (from) {
+              return `${dayjs(from).format('DD/MM/YYYY')} – ...`;
+            }
+            return '';
           }}
-          localeText={{ start: 'Desde', end: 'Hasta' }}
-          slotProps={{
-            textField: {
-              size: 'small',
-              InputProps: {
-                className: textFieldClasses,
-              },
-            },
-          }}
-          sx={{
-            width: '100%',
-            maxWidth: '260px',
+          leftSection={<Calendar className="h-4 w-4 text-gray-500" />}
+          leftSectionPointerEvents="none"
+          clearable={false}
+          styles={getVariantStyles()}
+          w="100%"
+          popoverProps={{ withinPortal: true, zIndex: 9999 }}
+          previousIcon={
+            <motion.div whileTap={{ rotate: -180, scale: 0.9 }}>
+              <ChevronLeft className="h-5 w-5" />
+            </motion.div>
+          }
+          nextIcon={
+            <motion.div whileTap={{ rotate: 180, scale: 0.9 }}>
+              <ChevronRight className="h-5 w-5" />
+            </motion.div>
+          }
+
+          classNames={{
+            calendarHeaderControl: 'h-10 w-10 rounded-full p-0 transition-transform duration-200 ease-out hover:bg-accent hover:scale-110',
+            calendarHeaderLevel: 'text-sm font-medium',
+            weekday: 'text-muted-foreground w-9 font-normal text-[0.8rem]',
+            day: `
+              h-9 w-9 p-0 font-semibold rounded-md transition-colors 
+              hover:bg-accent hover:text-accent-foreground
+              
+              data-[in-range]:bg-accent data-[in-range]:text-accent-foreground
+              
+              data-[first-in-range]:bg-primary data-[first-in-range]:text-primary-foreground data-[first-in-range]:rounded-l-md
+              
+              data-[last-in-range]:bg-primary data-[last-in-range]:text-primary-foreground data-[last-in-range]:rounded-r-md
+              
+              data-[selected]:not([data-in-range]):bg-primary data-[selected]:not([data-in-range]):text-primary-foreground data-[selected]:not([data-in-range]):rounded-full
+              
+              data-[today]:bg-accent/50 data-[today]:text-accent-foreground
+
+              data-[outside]:text-muted-foreground data-[outside]:opacity-50
+              data-[disabled]:text-muted-foreground data-[disabled]:opacity-50
+            `,
           }}
         />
-
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={arrowClases}
-            onClick={() => navigateMonth('next')}
-            aria-label="Mes siguiente"
-          >
-            <ChevronRight className="h-5 w-5 text-primary" />
-          </Button>
-        </motion.div>
-      </div>
-    </LocalizationProvider>
+      </DatesProvider>
+    </MantineProvider>
   );
 };
 

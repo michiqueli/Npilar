@@ -125,7 +125,7 @@ const FilterBar = ({ onApplyFilters, onClearFilters }) => {
             className="p-4 rounded-lg bg-card border mb-6"
         >
             <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-[1.5fr_1.5fr] xl:grid-cols-[1.75fr_1.25fr_1.25fr_1.25fr_1.25fr] gap-4 items-end">
-                <div className='p-1'>
+                <div >
                     <Label>Rango de Fechas</Label>
                     <PeriodPicker dateRange={dateRange} setDateRange={setDateRange}
                     /></div>

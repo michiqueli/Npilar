@@ -310,9 +310,9 @@ const Analitica = () => {
                     </div>
                     {activeTab !== 'caja' && (
                         <>
-                            <div className="grid grid-col-1 items-center lg:justify-end lg:items-end gap-2 w-full justify-center lg:grid-cols-[0.5fr_3fr]">
+                            <div className="grid grid-col-1 items-center lg:justify-end lg:items-end gap-2 w-1/2 justify-center lg:grid-cols-[0.5fr_0.5fr]">
                                 <DayFilterDropdown selectedDays={selectedDays} setSelectedDays={setSelectedDays} />
-                                <PeriodPicker dateRange={dateRange} setDateRange={setDateRange} variant='ghost' />
+                                <PeriodPicker dateRange={dateRange} setDateRange={setDateRange} varianr='primary'/>
                             </div>
                             <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/40">
                                 <p className="text-sm font-medium text-muted-foreground mr-2">Atajos:</p>
