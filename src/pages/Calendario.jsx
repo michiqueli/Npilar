@@ -110,79 +110,92 @@ const Calendario = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    useEffect(() => {
-        const fetchAllData = async () => {
-            setLoading(true);
-            const monthStart = startOfMonth(currentDate);
-            const monthEnd = endOfMonth(currentDate);
+    const fetchAllData = async () => {
+        setLoading(true);
+        const monthStart = startOfMonth(currentDate);
+        const monthEnd = endOfMonth(currentDate);
 
-            try {
-                const [appointmentsRes, clientsRes, servicesRes, schedulesRes, exceptionsRes] = await Promise.all([
-                    supabase.from('appointments').select('*, clients(id, name), services(id, name, duration_min)').gte('appointment_at', monthStart.toISOString()).lte('appointment_at', monthEnd.toISOString()),
-                    supabase.from('clients').select('*'),
-                    // --- CORRECCIÓN: Se añade el filtro para traer solo servicios activos ---
-                    supabase.from('services').select('*').eq('active', true),
-                    supabase.from('work_schedules').select('*'),
-                    supabase.from('schedule_exceptions').select('*')
-                ]);
+        try {
+            const [appointmentsRes, clientsRes, servicesRes, schedulesRes, exceptionsRes] = await Promise.all([
+                supabase.from('appointments').select('*, clients(id, name), services(id, name, duration_min)').gte('appointment_at', monthStart.toISOString()).lte('appointment_at', monthEnd.toISOString()),
+                supabase.from('clients').select('*'),
+                supabase.from('services').select('*').eq('active', true),
+                supabase.from('work_schedules').select('*'),
+                supabase.from('schedule_exceptions').select('*')
+            ]);
 
-                if (appointmentsRes.error) throw appointmentsRes.error;
-                if (clientsRes.error) throw clientsRes.error;
-                if (servicesRes.error) throw servicesRes.error;
-                if (schedulesRes.error) throw schedulesRes.error;
-                if (exceptionsRes.error) throw exceptionsRes.error;
+            if (appointmentsRes.error) throw appointmentsRes.error;
+            if (clientsRes.error) throw clientsRes.error;
+            if (servicesRes.error) throw servicesRes.error;
+            if (schedulesRes.error) throw schedulesRes.error;
+            if (exceptionsRes.error) throw exceptionsRes.error;
 
-                const appointmentsWithIndex = (appointmentsRes.data || []).map(appointment => {
-                    const appointmentDate = parseISO(appointment.appointment_at);
-                    const hour = appointmentDate.getHours();
-                    const minute = appointmentDate.getMinutes();
-                    const hourIndex = (hour - 8) * 4 + Math.floor(minute / 15);
-                    const duration = appointment.duration_at_time_minutes || 15;
-                    const durationInSlots = Math.ceil(duration / 15);
-                    return { ...appointment, hourIndex, durationInSlots };
-                });
-                setAppointments(appointmentsWithIndex);
+            const appointmentsWithIndex = (appointmentsRes.data || []).map(appointment => {
+                const appointmentDate = parseISO(appointment.appointment_at);
+                const hour = appointmentDate.getHours();
+                const minute = appointmentDate.getMinutes();
+                const hourIndex = (hour - 8) * 4 + Math.floor(minute / 15);
+                const duration = appointment.duration_at_time_minutes || 15;
+                const durationInSlots = Math.ceil(duration / 15);
+                return { ...appointment, hourIndex, durationInSlots };
+            });
+            setAppointments(appointmentsWithIndex);
 
-                setClients(clientsRes.data || []);
-                setServices(servicesRes.data || []);
+            setClients(clientsRes.data || []);
+            setServices(servicesRes.data || []);
 
-                const formattedAvailability = {
-                    default: {
-                        '0': { available: false, ranges: [], breaks: [] }, '1': { available: false, ranges: [], breaks: [] },
-                        '2': { available: false, ranges: [], breaks: [] }, '3': { available: false, ranges: [], breaks: [] },
-                        '4': { available: false, ranges: [], breaks: [] }, '5': { available: false, ranges: [], breaks: [] },
-                        '6': { available: false, ranges: [], breaks: [] },
-                    },
-                    exceptions: {}
-                };
+            const formattedAvailability = {
+                default: {
+                    '0': { available: false, ranges: [], breaks: [] }, '1': { available: false, ranges: [], breaks: [] },
+                    '2': { available: false, ranges: [], breaks: [] }, '3': { available: false, ranges: [], breaks: [] },
+                    '4': { available: false, ranges: [], breaks: [] }, '5': { available: false, ranges: [], breaks: [] },
+                    '6': { available: false, ranges: [], breaks: [] },
+                },
+                exceptions: {}
+            };
 
-                schedulesRes.data.forEach(s => {
-                    const dayKey = s.day_of_week.toString();
-                    formattedAvailability.default[dayKey].available = true;
-                    if (s.is_break) {
-                        formattedAvailability.default[dayKey].breaks.push({ start: s.start_time, end: s.end_time });
+            schedulesRes.data.forEach(s => {
+                const dayKey = s.day_of_week.toString();
+                formattedAvailability.default[dayKey].available = true;
+                if (s.is_break) {
+                    formattedAvailability.default[dayKey].breaks.push({ start: s.start_time, end: s.end_time });
+                } else {
+                    formattedAvailability.default[dayKey].ranges.push({ start: s.start_time, end: s.end_time });
+                }
+            });
+            exceptionsRes.data.forEach(e => {
+                const dateKey = e.exception_date;
+
+                if (!formattedAvailability.exceptions[dateKey]) {
+                    formattedAvailability.exceptions[dateKey] = {
+                        available: e.available,
+                        ranges: [],
+                        breaks: []
+                    };
+                }
+                if (e.available) {
+                    if (e.is_break) {
+                        formattedAvailability.exceptions[dateKey].breaks.push({ start: e.start_time, end: e.end_time });
                     } else {
-                        formattedAvailability.default[dayKey].ranges.push({ start: s.start_time, end: s.end_time });
+                        formattedAvailability.exceptions[dateKey].ranges.push({ start: e.start_time, end: e.end_time });
                     }
-                });
+                }
+            });
+            setAvailability(formattedAvailability);
 
-                exceptionsRes.data.forEach(e => {
-                    formattedAvailability.exceptions[e.exception_date] = { available: false, ranges: [], breaks: [] };
-                });
-                setAvailability(formattedAvailability);
+        } catch (error) {
+            console.error("Error cargando datos del calendario:", error);
+            toast({
+                title: "Error de Carga",
+                description: "No se pudieron cargar los datos de la agenda.",
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            } catch (error) {
-                console.error("Error cargando datos del calendario:", error);
-                toast({
-                    title: "Error de Carga",
-                    description: "No se pudieron cargar los datos de la agenda.",
-                    variant: "destructive",
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
+    useEffect(() => {
         fetchAllData();
     }, [currentDate, toast]);
 
@@ -321,78 +334,100 @@ const Calendario = () => {
         }
     };
 
-    const handleSaveAvailability = async (newAvailability) => {
+    const handleDeleteAvailability = async (dateKey) => {
+        try {
+            const { error } = await supabase.from('schedule_exceptions').delete().eq('exception_date', dateKey);
+            if (error) throw error;
+            const updatedExceptions = { ...availability.exceptions };
+            delete updatedExceptions[dateKey];
+            setAvailability(prev => ({ ...prev, exceptions: updatedExceptions }));
+            toast({ title: "✅ Excepción Eliminada", description: "El horario especial ha sido eliminado." });
+        } catch (error) {
+            console.error("Error eliminando excepción:", error);
+            toast({ variant: "destructive", title: "Error al Eliminar", description: error.message });
+        }
+    };
+
+    const handleSaveAvailability = async (payload) => {
         setLoading(true);
         try {
-            const { error: deleteSchedulesError } = await supabase
-                .from('work_schedules')
-                .delete()
-                .neq('id', 0);
+            if (payload.type === 'full_update') {
+                const newAvailability = payload.data;
 
-            if (deleteSchedulesError) throw deleteSchedulesError;
+                await supabase.from('work_schedules').delete().neq('id', 0);
+                await supabase.from('schedule_exceptions').delete().neq('id', 0);
 
-            const { error: deleteExceptionsError } = await supabase
-                .from('schedule_exceptions')
-                .delete()
-                .neq('id', 0);
+                const newSchedules = [];
+                for (const dayKey in newAvailability.default) {
+                    const daySchedule = newAvailability.default[dayKey];
+                    if (daySchedule.available) {
+                        daySchedule.ranges.forEach(range => newSchedules.push({ day_of_week: parseInt(dayKey), start_time: range.start, end_time: range.end, is_break: false }));
+                        daySchedule.breaks.forEach(range => newSchedules.push({ day_of_week: parseInt(dayKey), start_time: range.start, end_time: range.end, is_break: true }));
+                    }
+                }
+                if (newSchedules.length > 0) {
+                    const { error } = await supabase.from('work_schedules').insert(newSchedules);
+                    if (error) throw error;
+                }
 
-            if (deleteExceptionsError) throw deleteExceptionsError;
+                const newExceptions = [];
+                for (const dateKey in newAvailability.exceptions) {
+                    const exceptionDetails = newAvailability.exceptions[dateKey];
 
-            const newSchedules = [];
-            for (const dayKey in newAvailability.default) {
-                const daySchedule = newAvailability.default[dayKey];
-                if (daySchedule.available) {
-                    daySchedule.ranges.forEach(range => {
-                        newSchedules.push({
-                            day_of_week: parseInt(dayKey),
-                            start_time: range.start,
-                            end_time: range.end,
+                    if (exceptionDetails.available === false) {
+                        // CASO A: Día completo NO LABORABLE. Se crea una sola fila.
+                        newExceptions.push({
+                            exception_date: dateKey,
+                            available: false,
+                            start_time: null,
+                            end_time: null,
                             is_break: false
                         });
-                    });
-                    daySchedule.breaks.forEach(range => {
-                        newSchedules.push({
-                            day_of_week: parseInt(dayKey),
-                            start_time: range.start,
-                            end_time: range.end,
-                            is_break: true
-                        });
-                    });
+                    } else {
+                        // CASO B: Día con HORARIO ESPECIAL. 
+                        // Se asume una sola fila por fecha. Tomamos el primer rango de tiempo.
+                        const firstRange = exceptionDetails.ranges[0];
+                        if (firstRange) {
+                            newExceptions.push({
+                                exception_date: dateKey,
+                                available: true,
+                                start_time: firstRange.start,
+                                end_time: firstRange.end,
+                                is_break: false
+                            });
+                        }
+                        // Si no hay rangos, no se crea la excepción (es un estado inválido)
+                    }
                 }
-            }
 
-            if (newSchedules.length > 0) {
-                const { error: insertSchedulesError } = await supabase
-                    .from('work_schedules')
-                    .insert(newSchedules);
-
-                if (insertSchedulesError) throw insertSchedulesError;
-            }
-
-            const newExceptions = [];
-            for (const dateKey in newAvailability.exceptions) {
-                const exceptionSchedule = newAvailability.exceptions[dateKey];
-                if (!exceptionSchedule.available) {
-                    newExceptions.push({
-                        exception_date: dateKey,
-                        notes: 'Día no laborable'
-                    });
+                if (newExceptions.length > 0) {
+                    const { error } = await supabase.from('schedule_exceptions').insert(newExceptions);
+                    // Si hay un error aquí, es probable que sea el de duplicate key
+                    if (error) throw error;
                 }
+
+                setAvailability(newAvailability); // Actualiza el estado principal
+                toast({ title: "✅ Horario Actualizado", description: "Tus cambios en el horario se han guardado." });
+
+                // ---- RAMA 2: AÑADIR NUEVAS EXCEPCIONES (add_exceptions) ----
+            } else if (payload.type === 'add_exceptions') {
+
+                const { exceptionsToInsert } = payload.data;
+                const { error } = await supabase.from('schedule_exceptions').insert(exceptionsToInsert);
+                if (error) throw error;
+                toast({ title: "✅ Excepción Guardada", description: "El nuevo horario especial ha sido añadido." });
             }
+            await fetchAllData();
 
-            if (newExceptions.length > 0) {
-                const { error: insertExceptionsError } = await supabase
-                    .from('schedule_exceptions')
-                    .insert(newExceptions);
-
-                if (insertExceptionsError) throw insertExceptionsError;
-            }
-
-            setAvailability(newAvailability);
-            toast({ title: "✅ Horarios Actualizados", description: "Tus nuevos horarios de trabajo se han guardado." });
         } catch (error) {
-            console.error("Error saving availability:", error);
-            toast({ variant: "destructive", title: "Error al Guardar", description: "No se pudieron guardar los horarios." });
+            console.error("Error guardando disponibilidad:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al Guardar",
+                description: error.message.includes('duplicate key')
+                    ? "Error: Ya existe una excepción para una de las fechas seleccionadas."
+                    : error.message
+            });
         } finally {
             setIsAvailabilityModalOpen(false);
             setLoading(false);
@@ -428,7 +463,7 @@ const Calendario = () => {
 
         const dateKey = format(day, 'yyyy-MM-dd');
         const dayOfWeek = day.getDay().toString();
-        const schedule = availability.exceptions[dateKey] ? { available: false, ranges: [], breaks: [] } : availability.default[dayOfWeek];
+        const schedule = availability.exceptions[dateKey] || availability.default[dayOfWeek];
 
         if (!schedule || !schedule.available) return 'unavailable';
 
@@ -454,7 +489,6 @@ const Calendario = () => {
     if (loading) {
         return <div className="flex justify-center items-center h-screen">Cargando agenda...</div>;
     }
-
     return (
         <>
             <Helmet>
@@ -707,6 +741,7 @@ const Calendario = () => {
                 onClose={() => setIsAvailabilityModalOpen(false)}
                 availability={availability}
                 onSave={handleSaveAvailability}
+                onDelete={handleDeleteAvailability}
             />
             <ConfirmationDialog
                 isOpen={isConfirmOpen}

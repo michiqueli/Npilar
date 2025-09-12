@@ -7,10 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, eachDayOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 const weekDays = [
     { key: '1', label: 'Lunes' },
@@ -22,7 +21,6 @@ const weekDays = [
     { key: '0', label: 'Domingo' },
 ];
 
-// Componente interno para renderizar las filas de rangos de tiempo de forma responsiva
 const TimeRangeRow = ({ range, onTimeChange, onRemove }) => (
     <div className="flex items-center gap-2 mt-1">
         <Input type="time" step="900" value={range.start} onChange={(e) => onTimeChange('start', e.target.value)} className="w-full" />
@@ -34,12 +32,18 @@ const TimeRangeRow = ({ range, onTimeChange, onRemove }) => (
     </div>
 );
 
-const AvailabilityModal = ({ isOpen, onClose, availability, onSave }) => {
+const AvailabilityModal = ({ isOpen, onClose, availability, onSave, onDelete }) => {
     const { toast } = useToast();
     const [defaultHours, setDefaultHours] = useState({});
     const [exceptions, setExceptions] = useState({});
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [tab, setTab] = useState('default');
+    const [exceptionType, setExceptionType] = useState('single');
+    const [singleDate, setSingleDate] = useState(null);
+    const [customTimeDate, setCustomTimeDate] = useState(null);
+    const [dateRange, setDateRange] = useState({ from: null, to: null });
+    const [times, setTimes] = useState({ start: '09:00', end: '13:00' });
+    const [localSchedule, setLocalSchedule] = useState(availability);
 
     useEffect(() => {
         if (isOpen) {
@@ -77,30 +81,104 @@ const AvailabilityModal = ({ isOpen, onClose, availability, onSave }) => {
         });
     };
 
-    const handleExceptionToggle = (date) => {
-        const dateKey = format(date, 'yyyy-MM-dd');
-        setExceptions(prev => {
-            const newExceptions = { ...prev };
-            if (newExceptions[dateKey]) {
-                delete newExceptions[dateKey];
-            } else {
-                newExceptions[dateKey] = { available: false, ranges: [], breaks: [] };
+    const handleDeleteException = (dateKeyToDelete) => {
+        setLocalSchedule(prevSchedule => {
+            const newExceptions = { ...prevSchedule.exceptions };
+            if (newExceptions[dateKeyToDelete]) {
+                delete newExceptions[dateKeyToDelete];
+                onDelete(dateKeyToDelete);
             }
-            return newExceptions;
+            return {
+                ...prevSchedule,
+                exceptions: newExceptions
+            };
         });
     };
-    
-    const handleSave = () => {
-        const newAvailability = { default: defaultHours, exceptions };
-        onSave(newAvailability);
+
+
+
+    const handlePrepareAndSave = () => {
+        if (tab === 'default') {
+            onSave({
+                type: 'full_update',
+                data: localSchedule
+            });
+            return;
+        }
+        if (tab === 'exceptions') {
+            let exceptionsToInsert = [];
+            switch (exceptionType) {
+                case 'single':
+                    if (!singleDate) {
+                        alert("Error: Debes seleccionar una fecha.");
+                        return;
+                    }
+                    exceptionsToInsert.push({
+                        exception_date: format(singleDate, 'yyyy-MM-dd'),
+                        available: false,
+                        start_time: null,
+                        end_time: null,
+                        is_break: false
+                    });
+                    break;
+                case 'range':
+                    if (!dateRange || !dateRange.from || !dateRange.to) {
+                        alert("Error: Debes seleccionar un rango de fechas válido.");
+                        return;
+                    }
+                    const daysInRange = eachDayOfInterval({
+                        start: dateRange.from,
+                        end: dateRange.to
+                    });
+
+                    exceptionsToInsert = daysInRange.map(day => ({
+                        exception_date: format(day, 'yyyy-MM-dd'),
+                        available: false,
+                        start_time: null,
+                        end_time: null,
+                        is_break: false
+                    }));
+                    break;
+                case 'customTime':
+                    if (!customTimeDate) {
+                        alert("Error: Debes seleccionar una fecha.");
+                        return;
+                    }
+                    if (times.end <= times.start) {
+                        alert("Error: La hora de fin debe ser posterior a la hora de inicio.");
+                        return;
+                    }
+                    exceptionsToInsert.push({
+                        exception_date: format(customTimeDate, 'yyyy-MM-dd'),
+                        available: true,
+                        start_time: times.start,
+                        end_time: times.end,
+                        is_break: false
+                    });
+                    break;
+
+                default:
+                    console.error("Tipo de excepción no reconocido:", exceptionType);
+                    return;
+            }
+            if (exceptionsToInsert.length === 0) {
+                alert("No hay nada que guardar. Por favor, completa la información.");
+                return;
+            }
+            onSave({
+                type: 'add_exceptions',
+                data: { exceptionsToInsert }
+            });
+        }
     };
+
 
     const sortedExceptions = useMemo(() => {
         return Object.keys(exceptions).sort((a, b) => new Date(a) - new Date(b));
     }, [exceptions]);
 
-    const dateKeyForSelected = format(selectedDate, 'yyyy-MM-dd');
-    const isException = !!exceptions[dateKeyForSelected];
+
+    const dateKeyForSelected = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -111,13 +189,13 @@ const AvailabilityModal = ({ isOpen, onClose, availability, onSave }) => {
                         Define tu horario de trabajo estándar, añade descansos y gestiona excepciones para días específicos.
                     </DialogDescription>
                 </DialogHeader>
-                
+
                 <Tabs value={tab} onValueChange={setTab} className="mt-4">
                     <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
                         <TabsTrigger value="default">Horario Predeterminado</TabsTrigger>
                         <TabsTrigger value="exceptions">Excepciones por Día</TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="default" className="mt-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                         {weekDays.map(({ key, label }) => {
                             const dayConfig = defaultHours[key];
@@ -142,7 +220,7 @@ const AvailabilityModal = ({ isOpen, onClose, availability, onSave }) => {
                                             <div className="space-y-2">
                                                 <Label className="text-xs text-muted-foreground">Horarios de Trabajo</Label>
                                                 {dayConfig.ranges.map((range, index) => (
-                                                    <TimeRangeRow 
+                                                    <TimeRangeRow
                                                         key={`range-${index}`}
                                                         range={range}
                                                         onTimeChange={(field, value) => handleDefaultHoursChange(key, field, value, 'ranges', index)}
@@ -156,7 +234,7 @@ const AvailabilityModal = ({ isOpen, onClose, availability, onSave }) => {
                                             <div className="space-y-2">
                                                 <Label className="text-xs text-muted-foreground">Descansos</Label>
                                                 {dayConfig.breaks.map((range, index) => (
-                                                    <TimeRangeRow 
+                                                    <TimeRangeRow
                                                         key={`break-${index}`}
                                                         range={range}
                                                         onTimeChange={(field, value) => handleDefaultHoursChange(key, field, value, 'breaks', index)}
@@ -174,52 +252,125 @@ const AvailabilityModal = ({ isOpen, onClose, availability, onSave }) => {
                         })}
                     </TabsContent>
 
-                    <TabsContent value="exceptions" className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <Label>Selecciona una fecha</Label>
-                            <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={setSelectedDate}
-                                className="rounded-md border mt-2"
-                                locale={es}
-                            />
-                            <div className="mt-4 space-y-4">
-                                <h3 className="font-semibold text-lg">
-                                    Excepción para {format(selectedDate, 'PPP', { locale: es })}
-                                </h3>
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                                    <span className="font-semibold">Día no laborable</span>
-                                    <Switch
-                                        checked={isException}
-                                        onCheckedChange={() => handleExceptionToggle(selectedDate)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                             <h3 className="font-semibold text-lg">Excepciones Activas</h3>
-                             <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-2">
-                                {sortedExceptions.length > 0 ? (
-                                    sortedExceptions.map(dateKey => (
-                                        <div key={dateKey} className="flex items-center justify-between p-2 bg-card rounded">
-                                            <span className="text-sm font-medium">{format(parseISO(dateKey), 'PPP', { locale: es })}</span>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleExceptionToggle(parseISO(dateKey))}>
-                                                <Trash2 className="w-4 h-4 text-destructive" />
-                                            </Button>
+                    <TabsContent value="exceptions" className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-center content-center w-full">
+                        <Tabs value={exceptionType} onValueChange={setExceptionType}>
+                            <TabsList className="grid w-full grid-cols-1">
+                                <TabsTrigger value="single">Día Completo</TabsTrigger>
+                                <TabsTrigger value="range">Rango de Fechas</TabsTrigger>
+                                <TabsTrigger value="customTime">Horario Específico</TabsTrigger>
+                            </TabsList>
+                            <div className="mt-4">
+                                <TabsContent value='single' className="mt-4 justify-center flex">
+                                    {/* --- CASO 1: DÍA ÚNICO --- */}
+                                    {exceptionType === 'single' && (
+                                        <div className="flex justify-center flex-col items-center border border-solid rounded-md">
+                                            <p className='border-b-2'>Selecciona el día que quieres marcar como no laborable.</p>
+                                            <Calendar
+                                                mode="single"
+                                                selected={singleDate}
+                                                onSelect={setSingleDate}
+                                            />
                                         </div>
-                                    ))
+                                    )}
+                                </TabsContent>
+                                <TabsContent value='range' className="mt-4">
+                                    {/* --- CASO 2: RANGO DE FECHAS --- */}
+                                    {exceptionType === 'range' && (
+                                        <div className="flex justify-center flex-col items-center border border-solid rounded-md">
+                                            <p className='border-b-2'>Selecciona el rango de fechas que quieres marcar como no laborables.</p>
+                                            <Calendar
+                                                mode="range"
+                                                selected={dateRange}
+                                                onSelect={setDateRange}
+                                            />
+                                        </div>
+                                    )}
+                                </TabsContent>
+                                <TabsContent value='customTime' className="mt-4">
+                                    {/* --- CASO 3: HORARIO ESPECÍFICO --- */}
+                                    {exceptionType === 'customTime' && (
+                                        <div className="space-y-4 flex justify-center flex-col items-center border border-solid rounded-md">
+                                            <p className='border-b-2'>Selecciona una fecha y define un horario de trabajo especial.</p>
+                                            <Calendar
+                                                mode="single"
+                                                selected={customTimeDate}
+                                                onSelect={setCustomTimeDate}
+                                            />
+                                            <div className="flex gap-4">
+                                                <div>
+                                                    <Label htmlFor="start_time">Hora de Inicio</Label>
+                                                    <Input
+                                                        id="start_time"
+                                                        type="time"
+                                                        value={times.start}
+                                                        onChange={(e) => setTimes(prev => ({ ...prev, start: e.target.value }))}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="end_time">Hora de Fin</Label>
+                                                    <Input
+                                                        id="end_time"
+                                                        type="time"
+                                                        value={times.end}
+                                                        onChange={(e) => setTimes(prev => ({ ...prev, end: e.target.value }))}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </TabsContent>
+                            </div>
+                        </Tabs>
+                        <div className="space-y-4">
+                            <h3 className="font-semibold text-lg">Excepciones Activas</h3>
+                            <div className=" max-h-96 overflow-y-scroll space-y-2 border rounded-lg p-2 bg-muted/50">
+                                {sortedExceptions.length > 0 ? (
+                                    sortedExceptions.map(dateKey => {
+                                        const exceptionDetails = localSchedule.exceptions[dateKey];
+                                        if (!exceptionDetails) {
+                                            return null;
+                                        }
+                                        const dateObject = parseISO(dateKey);
+                                        return (
+                                            <div key={dateKey} className="flex items-center justify-between p-2 pl-3 bg-card rounded-md shadow-sm">
+                                                <div>
+                                                    <p className="text-sm font-semibold text-foreground">
+                                                        {/* Usamos PPP para un formato amigable como "12 de sep. de 2025" */}
+                                                        {format(dateObject, 'PPP', { locale: es })}
+                                                    </p>
+                                                    {/* Lógica para mostrar el tipo de excepción */}
+                                                    {!exceptionDetails.available ? (
+                                                        <p className="text-xs font-medium text-destructive">Día Completo (No Laborable)</p>
+                                                    ) : (
+                                                        <p className="text-xs font-medium text-sky-600">
+                                                            Horario Especial: {exceptionDetails.ranges[0]?.start} - {exceptionDetails.ranges[0]?.end}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* El botón ahora llama a la nueva función con el dateKey */}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={() => handleDeleteException(dateKey)}
+                                                >
+                                                    <Trash2 className="w-4 h-4 text-destructive/70 hover:text-destructive" />
+                                                </Button>
+                                            </div>
+                                        )
+                                    })
                                 ) : (
                                     <p className="text-sm text-muted-foreground text-center p-4">No hay excepciones configuradas.</p>
                                 )}
-                             </div>
+                            </div>
                         </div>
                     </TabsContent>
                 </Tabs>
 
                 <DialogFooter>
                     <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-                    <Button variant="primary" onClick={handleSave}>Guardar Cambios</Button>
+                    <Button variant="primary" onClick={handlePrepareAndSave}>Guardar Cambios</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
