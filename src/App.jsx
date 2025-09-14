@@ -19,6 +19,7 @@ import RegisterPage from "@/pages/RegisterPage";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import PublicBookingPage from './pages/public/PublicBookingPage';
 
 function App() {
   const ProtectedRoute = ({ children }) => {
@@ -49,6 +50,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/reservar" element={<PublicBookingPage />} />
               <Route
                 path="/*"
                 element={
