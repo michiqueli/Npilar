@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, BarChart3, Scissors, LogOut, Fingerprint, X } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Users, BarChart3, Scissors, LogOut, X } from 'lucide-react';
 import KScissorsIcon from '@/components/KScissorsIcon';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ const Sidebar = ({
 }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout, webAuthnRegister } = useAuth();
+    const { user, logout } = useAuth();
     const menuItems = [{
         icon: LayoutDashboard,
         label: 'Panel del Día',
